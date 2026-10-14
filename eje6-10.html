@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>NetBeans Simulator - Ejercicios 6 al 10 (Intermedio)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", Tahoma, sans-serif; font-size: 12px; background: #1e1e1e; color: #333; height: 100vh; overflow: hidden; }
+.ide { display: flex; flex-direction: column; height: 100vh; background: #F0F0F0; }
+
+.toolbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: linear-gradient(#FDFDFD, #E8E8E8); border-bottom: 1px solid #C8C8C8; height: 34px; flex-wrap: wrap; }
+.toolbar-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 3px; cursor: pointer; font-size: 14px; }
+.toolbar-icon:hover { background: #D6E6F7; border-color: #7EB4EA; }
+.toolbar-icon.run { color: #2E8B57; font-weight: bold; }
+.toolbar-sep { width: 1px; height: 20px; background: #CCC; margin: 0 4px; }
+.toolbar-label { color: #555; font-size: 11px; margin-left: 8px; }
+.exercise-selector { display: flex; gap: 4px; margin-left: 12px; flex-wrap: wrap; align-items: center; flex: 1; }
+.ex-btn { padding: 3px 10px; font-size: 11px; font-family: inherit; background: linear-gradient(#FDFDFD, #E3E3E3); border: 1px solid #ADADAD; border-radius: 3px; cursor: pointer; color: #333; }
+.ex-btn:hover { background: linear-gradient(#EDF4FC, #D6E6F7); border-color: #7EB4EA; }
+.ex-btn.active { background: linear-gradient(#3875D7, #2E5FA8); color: #fff; border-color: #1E4A8A; }
+
+/* Nav buttons (atrás / adelante) */
+.nav-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  color: #fff;
+  border: 1px solid;
+  border-radius: 3px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+.nav-btn.back {
+  background: linear-gradient(#5B9BD5, #3D7EB8);
+  border-color: #2E6AA3;
+}
+.nav-btn.back:hover {
+  background: linear-gradient(#78B0E0, #4A8CC6);
+  box-shadow: 0 0 0 2px rgba(91, 155, 213, .3), 0 2px 5px rgba(0,0,0,.2);
+  transform: translateY(-1px);
+}
+.nav-btn.forward {
+  background: linear-gradient(#4CAF50, #388E3C);
+  border-color: #2E7D32;
+}
+.nav-btn.forward:hover {
+  background: linear-gradient(#66BB6A, #43A047);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, .3), 0 2px 5px rgba(0,0,0,.2);
+  transform: translateY(-1px);
+}
+.nav-btn:active { transform: translateY(0); }
+
+.workspace { display: flex; flex: 1; overflow: hidden; }
+
+.left-panel { width: 250px; background: #F0F0F0; border-right: 1px solid #C8C8C8; display: flex; flex-direction: column; overflow: hidden; }
+.panel-header { padding: 4px 8px; background: linear-gradient(#FAFAFA, #E8E8E8); border-bottom: 1px solid #D0D0D0; font-weight: 600; color: #333; font-size: 11px; }
+.tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+.tree-node { padding: 3px 8px 3px 16px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #333; white-space: nowrap; }
+.tree-node:hover { background: #EAF2FB; }
+.tree-node.active { background: #3875D7; color: #fff; }
+.tree-node .icon { font-size: 13px; width: 16px; text-align: center; }
+.tree-node.indent-1 { padding-left: 32px; }
+.tree-node.indent-2 { padding-left: 48px; }
+.tree-node.indent-3 { padding-left: 64px; }
+.tree-node.indent-4 { padding-left: 80px; }
+.tree-node.indent-5 { padding-left: 96px; }
+
+.center-panel { flex: 1; display: flex; flex-direction: column; background: #FFF; overflow: hidden; }
+.editor-tabs { display: flex; background: #E8E8E8; border-bottom: 1px solid #C8C8C8; height: 28px; }
+.editor-tab { padding: 0 16px; display: flex; align-items: center; gap: 6px; border-right: 1px solid #D0D0D0; cursor: pointer; color: #555; font-size: 11px; }
+.editor-tab.active { background: #FFF; color: #000; border-bottom: 1px solid #FFF; margin-bottom: -1px; font-weight: 600; }
+.editor-content { flex: 1; overflow: auto; padding: 12px 0; background: #FFF; font-family: "Consolas", "Courier New", monospace; font-size: 12.5px; line-height: 1.5; display: none; }
+.editor-content.active { display: block; }
+
+.kw { color: #0000FF; font-weight: bold; }
+.str { color: #008000; }
+.cmt { color: #808080; font-style: italic; }
+.cls { color: #2B91AF; }
+.num { color: #098658; }
+.ann { color: #808080; }
+.code-line { padding: 0 16px; white-space: pre; }
+.code-line:hover { background: #F5F5F5; }
+.line-num { display: inline-block; width: 30px; text-align: right; padding-right: 12px; color: #999; user-select: none; }
+
+.design-view { flex: 1; display: none; background: #F0F0F0; overflow: auto; padding: 20px; align-items: flex-start; justify-content: center; }
+.design-view.active { display: flex; }
+
+.right-panel { width: 200px; background: #F0F0F0; border-left: 1px solid #C8C8C8; display: flex; flex-direction: column; }
+.palette-group { padding: 8px; font-size: 11px; color: #555; border-bottom: 1px solid #E0E0E0; }
+.palette-item { padding: 2px 0; color: #333; cursor: default; }
+
+.bottom-panel { height: 120px; background: #FFF; border-top: 1px solid #C8C8C8; display: flex; flex-direction: column; overflow: hidden; }
+.output-tabs { display: flex; background: #E8E8E8; border-bottom: 1px solid #C8C8C8; height: 26px; }
+.output-tab { padding: 0 14px; display: flex; align-items: center; border-right: 1px solid #D0D0D0; font-size: 11px; color: #555; cursor: pointer; }
+.output-tab.active { background: #FFF; color: #000; font-weight: 600; }
+.output-content { flex: 1; background: #1E1E1E; color: #D4D4D4; font-family: "Consolas", monospace; font-size: 12px; padding: 8px 12px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; }
+.out-green { color: #6A9955; }
+.out-blue { color: #569CD6; }
+
+.jframe { width: 720px; background: #F0F0F0; border: 1px solid #5A5A5A; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.4); overflow: hidden; user-select: none; }
+.jframe-titlebar { height: 30px; display: flex; align-items: center; gap: 8px; padding-left: 10px; background: linear-gradient(#FAFAFA, #EDEDED); border-bottom: 1px solid #DCDCDC; }
+.jframe-titlebar .title-icon { font-size: 13px; color: #2E7DD1; }
+.jframe-titlebar .title-text { flex: 1; color: #1a1a1a; font-size: 12px; }
+.jframe-win-btns { display: flex; height: 100%; }
+.jframe-win-btn { width: 40px; height: 100%; border: none; background: transparent; cursor: pointer; font-size: 11px; color: #333; }
+.jframe-win-btn:hover { background: #E5E5E5; }
+.jframe-win-btn.close:hover { background: #E81123; color: #fff; }
+
+.jframe-content { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.jpanel-titled { border: 1px solid #C8C8C8; border-radius: 3px; background: #F7F7F7; padding: 6px 14px 14px; margin: 0; }
+.jpanel-titled > legend { font-size: 11px; color: #333; padding: 0 6px; margin-left: 4px; }
+.jgrid { display: grid; grid-template-columns: 100px 1fr 100px 1fr; gap: 9px 10px; align-items: center; }
+.jgrid label { text-align: right; color: #222; font-size: 12px; }
+.jgrid input, .jgrid select { height: 24px; padding: 0 6px; border: 1px solid #B5B5B5; border-radius: 2px; background: #fff; font-family: inherit; font-size: 12px; color: #111; outline: none; }
+.jgrid input:focus, .jgrid select:focus { border-color: #4A90D9; box-shadow: 0 0 0 1px #A8CDF0; }
+.jgrid input:disabled, .jgrid select:disabled { background: #EEE; color: #999; }
+.jbuttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.jbtn { padding: 5px 16px; font-family: inherit; font-size: 12px; color: #1a1a1a; background: linear-gradient(#FDFDFD, #E3E3E3); border: 1px solid #ADADAD; border-radius: 3px; cursor: pointer; }
+.jbtn:hover { background: linear-gradient(#EDF4FC, #D6E6F7); border-color: #7EB4EA; }
+.jbtn:active { background: linear-gradient(#D6E6F7, #C3DBF3); }
+
+.jscrollpane { height: 170px; overflow: auto; border: 1px solid #B5B5B5; background: #fff; }
+.jtable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.jtable thead th { position: sticky; top: 0; padding: 5px 8px; text-align: left; font-weight: normal; color: #333; background: linear-gradient(#FFFFFF, #E8E8E8); border-right: 1px solid #D5D5D5; border-bottom: 1px solid #C0C0C0; white-space: nowrap; }
+.jtable tbody td { padding: 4px 8px; color: #222; border-bottom: 1px solid #EDEDED; white-space: nowrap; }
+.jtable tbody tr:nth-child(even) { background: #F8F8F8; }
+.jtable tbody tr:hover { background: #EAF2FB; cursor: default; }
+.jtable tbody tr.selected td { background: #3875D7; color: #fff; }
+.jtable tbody tr.empty-row td { background: #fff; color: #999; font-style: italic; text-align: center; padding: 14px; }
+
+.joverlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.25); z-index: 100; }
+.joverlay.show { display: flex; }
+.jdialog { width: 360px; background: #F0F0F0; border: 1px solid #5A5A5A; border-radius: 3px; box-shadow: 0 12px 34px rgba(0,0,0,.55); }
+.jdialog-title { padding: 6px 10px; font-weight: 600; color: #1a1a1a; background: linear-gradient(#FAFAFA, #E8E8E8); border-bottom: 1px solid #D0D0D0; }
+.jdialog-body { display: flex; gap: 12px; padding: 16px 14px; align-items: flex-start; }
+.jdialog-icon { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: bold; }
+.icon-info { background: #2E7DD1; }
+.icon-warn { background: #E8A33D; }
+.icon-error { background: #D64541; }
+.jdialog-text { font-size: 12px; line-height: 1.5; color: #222; padding-top: 5px; }
+.jdialog-footer { padding: 0 14px 14px; display: flex; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div class="ide">
+  <div class="toolbar">
+    <div class="toolbar-icon">📄</div>
+    <div class="toolbar-icon">📂</div>
+    <div class="toolbar-icon">💾</div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-icon run" id="btnRun" title="Run">▶</div>
+    <div class="toolbar-sep"></div>
+    <a href="index.html" class="nav-btn back" title="Volver a los ejercicios 1 al 5">
+      ← Ej. 1-5
+    </a>
+    <span class="toolbar-label">Intermedio:</span>
+    <div class="exercise-selector">
+      <button class="ex-btn active" data-ex="6">Ej. 6 Trabajadores</button>
+      <button class="ex-btn" data-ex="7">Ej. 7 Figuras</button>
+      <button class="ex-btn" data-ex="8">Ej. 8 Notas</button>
+      <button class="ex-btn" data-ex="9">Ej. 9 Descuentos</button>
+      <button class="ex-btn" data-ex="10">Ej. 10 Empleados</button>
+      <a href="eje11-15.html" class="nav-btn forward" title="Ir a los ejercicios 11 al 15">
+        Ej. 11-15 →
+      </a>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <div class="left-panel">
+      <div class="panel-header">Projects</div>
+      <div class="tree" id="tree"></div>
+    </div>
+    <div class="center-panel">
+      <div class="editor-tabs">
+        <div class="editor-tab active" id="tabSource" onclick="switchTab('source')">Source</div>
+        <div class="editor-tab" id="tabDesign" onclick="switchTab('design')">Design</div>
+      </div>
+      <div class="editor-content active" id="viewSource"></div>
+      <div class="design-view" id="viewDesign"></div>
+    </div>
+    <div class="right-panel">
+      <div class="panel-header">Palette</div>
+      <div class="palette-group">
+        <div style="font-weight:bold; margin-bottom:4px;">Swing Containers</div>
+        <div class="palette-item">Panel</div>
+        <div class="palette-item">Scroll Pane</div>
+      </div>
+      <div class="palette-group">
+        <div style="font-weight:bold; margin-bottom:4px;">Swing Controls</div>
+        <div class="palette-item">Label</div>
+        <div class="palette-item">Button</div>
+        <div class="palette-item">Text Field</div>
+        <div class="palette-item">Combo Box</div>
+        <div class="palette-item">Table</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-panel">
+    <div class="output-tabs">
+      <div class="output-tab active">Output - Run (RegistroPersonas)</div>
+      <div class="output-tab">Problems</div>
+    </div>
+    <div class="output-content" id="outputLog"></div>
+  </div>
+</div>
+
+<div class="joverlay" id="overlay">
+  <div class="jdialog">
+    <div class="jdialog-title" id="dlgTitle">Mensaje</div>
+    <div class="jdialog-body">
+      <div class="jdialog-icon icon-info" id="dlgIcon">i</div>
+      <div class="jdialog-text" id="dlgText"></div>
+    </div>
+    <div class="jdialog-footer">
+      <button class="jbtn" id="dlgOk">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DATOS DE LOS EJERCICIOS 6 AL 10
+   ========================================================= */
+const EJERCICIOS = {
+
+  /* ============== EJERCICIO 6 ============== */
+  6: {
+    nombre: "Registro de Trabajadores",
+    paquete: "com.mycompany.registropersonas.ejercicio6",
+    formTitulo: "Registro de Trabajadores",
+    campos: [
+      { id: "dni",    label: "DNI:",     tipo: "text" },
+      { id: "nombre", label: "Nombre:",  tipo: "text" },
+      { id: "cargo",  label: "Cargo:",   tipo: "text" },
+      { id: "tipo",   label: "Tipo:",    tipo: "combo", opciones: ["Administrativo", "Vendedor"] },
+      { id: "sueldo", label: "Sueldo Base:", tipo: "text" },
+      { id: "ventas", label: "Ventas:",  tipo: "text", soloSi: v => v.tipo === "Vendedor" }
+    ],
+    columnas: ["DNI", "Nombre", "Tipo", "Sueldo Base", "Ventas", "Sueldo Final"],
+    files: [
+      { nombre: "Trabajador.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio6;
+
+<span class="cmt">/** Clase base abstracta. */</span>
+<span class="kw">public abstract class</span> <span class="cls">Trabajador</span> {
+    <span class="kw">protected</span> String dni;
+    <span class="kw">protected</span> String nombre;
+    <span class="kw">protected</span> String cargo;
+    <span class="kw">protected double</span> sueldoBase;
+
+    <span class="kw">public</span> Trabajador(String dni, String nombre, String cargo, <span class="kw">double</span> sueldoBase) {
+        <span class="kw">this</span>.dni = dni;
+        <span class="kw">this</span>.nombre = nombre;
+        <span class="kw">this</span>.cargo = cargo;
+        <span class="kw">this</span>.sueldoBase = sueldoBase;
+    }
+
+    <span class="cmt">/** Polimorfismo: cada subclase implementa su propio cálculo. */</span>
+    <span class="kw">public abstract double</span> calcularSueldoFinal();
+
+    <span class="kw">public</span> String getDni()    { <span class="kw">return</span> dni; }
+    <span class="kw">public</span> String getNombre() { <span class="kw">return</span> nombre; }
+    <span class="kw">public</span> String getCargo()  { <span class="kw">return</span> cargo; }
+    <span class="kw">public double</span> getSueldoBase() { <span class="kw">return</span> sueldoBase; }
+}` },
+      { nombre: "Administrativo.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio6;
+
+<span class="kw">public class</span> <span class="cls">Administrativo</span> <span class="kw">extends</span> <span class="cls">Trabajador</span> {
+
+    <span class="kw">public</span> Administrativo(String dni, String nombre, String cargo, <span class="kw">double</span> sueldoBase) {
+        <span class="kw">super</span>(dni, nombre, cargo, sueldoBase);
+    }
+
+    <span class="ann">@Override</span>
+    <span class="kw">public double</span> calcularSueldoFinal() {
+        <span class="cmt">// Sueldo base + 15% de bonificación</span>
+        <span class="kw">return</span> sueldoBase + (sueldoBase * 0.15);
+    }
+}` },
+      { nombre: "Vendedor.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio6;
+
+<span class="kw">public class</span> <span class="cls">Vendedor</span> <span class="kw">extends</span> <span class="cls">Trabajador</span> {
+    <span class="kw">private final double</span> ventas;
+
+    <span class="kw">public</span> Vendedor(String dni, String nombre, String cargo, <span class="kw">double</span> sueldoBase, <span class="kw">double</span> ventas) {
+        <span class="kw">super</span>(dni, nombre, cargo, sueldoBase);
+        <span class="kw">this</span>.ventas = ventas;
+    }
+
+    <span class="ann">@Override</span>
+    <span class="kw">public double</span> calcularSueldoFinal() {
+        <span class="cmt">// Sueldo base + 5% del total de ventas</span>
+        <span class="kw">return</span> sueldoBase + (ventas * 0.05);
+    }
+
+    <span class="kw">public double</span> getVentas() { <span class="kw">return</span> ventas; }
+}` },
+      { nombre: "FrmTrabajador.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio6;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmTrabajador</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Trabajador&gt; listaTrabajadores = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmTrabajador() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"DNI"</span>, <span class="str">"Nombre"</span>, <span class="str">"Tipo"</span>, <span class="str">"Sueldo Base"</span>, <span class="str">"Ventas"</span>, <span class="str">"Sueldo Final"</span>
+        });
+        modeloTabla.setRowCount(0);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String dni    = txtDni.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        String cargo  = txtCargo.getText().trim();
+        String tipo   = (String) cboTipo.getSelectedItem();
+        String sStr   = txtSueldo.getText().trim();
+
+        <span class="kw">if</span> (dni.isEmpty() || nombre.isEmpty() || cargo.isEmpty() || sStr.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">double</span> sueldo;
+        <span class="kw">try</span> {
+            sueldo = Double.parseDouble(sStr);
+            <span class="kw">if</span> (sueldo &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El sueldo base debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Sueldo inválido."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Trabajador t : listaTrabajadores) {
+            <span class="kw">if</span> (t.getDni().equals(dni)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ya existe un trabajador con el DNI "</span> + dni);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Trabajador t;
+        <span class="kw">double</span> ventas = 0;
+        <span class="kw">if</span> (tipo.equals(<span class="str">"Administrativo"</span>)) {
+            t = <span class="kw">new</span> Administrativo(dni, nombre, cargo, sueldo);
+        } <span class="kw">else</span> {
+            String vStr = txtVentas.getText().trim();
+            <span class="kw">try</span> {
+                ventas = vStr.isEmpty() ? 0 : Double.parseDouble(vStr);
+                <span class="kw">if</span> (ventas &lt; 0) {
+                    JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Las ventas deben ser >= 0."</span>);
+                    <span class="kw">return</span>;
+                }
+            } <span class="kw">catch</span> (NumberFormatException e) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ventas inválidas."</span>);
+                <span class="kw">return</span>;
+            }
+            t = <span class="kw">new</span> Vendedor(dni, nombre, cargo, sueldo, ventas);
+        }
+
+        listaTrabajadores.add(t);
+        <span class="kw">double</span> sueldoFinal = t.calcularSueldoFinal();   <span class="cmt">// Polimorfismo</span>
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{dni, nombre, tipo,
+            String.format(<span class="str">"%.2f"</span>, sueldo),
+            ventas == 0 ? <span class="str">"-"</span> : String.format(<span class="str">"%.2f"</span>, ventas),
+            String.format(<span class="str">"%.2f"</span>, sueldoFinal)});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Trabajador registrado. Sueldo final: S/ "</span>
+            + String.format(<span class="str">"%.2f"</span>, sueldoFinal));
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un trabajador."</span>);
+            <span class="kw">return</span>;
+        }
+        listaTrabajadores.remove(fila);
+        modeloTabla.removeRow(fila);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtDni.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtCargo.setText(<span class="str">""</span>);
+        txtSueldo.setText(<span class="str">""</span>);
+        txtVentas.setText(<span class="str">""</span>);
+        cboTipo.setSelectedIndex(0);
+    }
+}` }
+    ],
+    validar: v => {
+      if (!v.dni || !v.nombre || !v.cargo || !v.sueldo) return { ok:false, tipo:'warn', msg:'Todos los campos obligatorios.' };
+      const s = parseFloat(v.sueldo);
+      if (isNaN(s) || s <= 0) return { ok:false, tipo:'warn', msg:'El sueldo base debe ser mayor que cero.' };
+      if (v.tipo === 'Vendedor') {
+        if (!v.ventas) return { ok:false, tipo:'warn', msg:'Ingrese las ventas realizadas.' };
+        const ve = parseFloat(v.ventas);
+        if (isNaN(ve) || ve < 0) return { ok:false, tipo:'warn', msg:'Las ventas deben ser >= 0.' };
+      }
+      return { ok:true };
+    },
+    claveUnica: 'dni', claveLabel: 'DNI',
+    calcularFila: v => {
+      const s = parseFloat(v.sueldo);
+      let final;
+      if (v.tipo === 'Administrativo') final = s + (s * 0.15);
+      else final = s + (parseFloat(v.ventas) * 0.05);
+      return [v.dni, v.nombre, v.tipo, s.toFixed(2),
+              v.tipo === 'Vendedor' ? parseFloat(v.ventas).toFixed(2) : '-',
+              final.toFixed(2)];
+    }
+  },
+
+  /* ============== EJERCICIO 7 ============== */
+  7: {
+    nombre: "Registro de Figuras Geométricas",
+    paquete: "com.mycompany.registropersonas.ejercicio7",
+    formTitulo: "Registro de Figuras Geométricas",
+    campos: [
+      { id: "figura", label: "Figura:", tipo: "combo", opciones: ["Círculo", "Rectángulo", "Cuadrado"] },
+      { id: "dato1",  label: "Radio:",  tipo: "text" },
+      { id: "dato2",  label: "Altura:", tipo: "text", soloSi: v => v.figura === "Rectángulo" }
+    ],
+    columnas: ["N.º", "Figura", "Área", "Perímetro"],
+    files: [
+      { nombre: "Figura.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio7;
+
+<span class="kw">public abstract class</span> <span class="cls">Figura</span> {
+    <span class="kw">public abstract double</span> calcularArea();
+    <span class="kw">public abstract double</span> calcularPerimetro();
+    <span class="kw">public abstract</span> String getNombre();
+}
+
+<span class="kw">class</span> <span class="cls">Circulo</span> <span class="kw">extends</span> <span class="cls">Figura</span> {
+    <span class="kw">private final double</span> radio;
+    <span class="kw">public</span> Circulo(<span class="kw">double</span> r) { radio = r; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularArea()      { <span class="kw">return</span> Math.PI * radio * radio; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularPerimetro() { <span class="kw">return</span> 2 * Math.PI * radio; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getNombre()         { <span class="kw">return</span> <span class="str">"Círculo"</span>; }
+}
+
+<span class="kw">class</span> <span class="cls">Rectangulo</span> <span class="kw">extends</span> <span class="cls">Figura</span> {
+    <span class="kw">private final double</span> base, altura;
+    <span class="kw">public</span> Rectangulo(<span class="kw">double</span> b, <span class="kw">double</span> a) { base = b; altura = a; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularArea()      { <span class="kw">return</span> base * altura; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularPerimetro() { <span class="kw">return</span> 2 * (base + altura); }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getNombre()         { <span class="kw">return</span> <span class="str">"Rectángulo"</span>; }
+}
+
+<span class="kw">class</span> <span class="cls">Cuadrado</span> <span class="kw">extends</span> <span class="cls">Figura</span> {
+    <span class="kw">private final double</span> lado;
+    <span class="kw">public</span> Cuadrado(<span class="kw">double</span> l) { lado = l; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularArea()      { <span class="kw">return</span> lado * lado; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularPerimetro() { <span class="kw">return</span> 4 * lado; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getNombre()         { <span class="kw">return</span> <span class="str">"Cuadrado"</span>; }
+}` },
+      { nombre: "FrmFigura.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio7;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmFigura</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Figura&gt; listaFiguras = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+    <span class="kw">private int</span> contador = 1;
+
+    <span class="kw">public</span> FrmFigura() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"N.º"</span>, <span class="str">"Figura"</span>, <span class="str">"Área"</span>, <span class="str">"Perímetro"</span>
+        });
+        modeloTabla.setRowCount(0);
+        cboFigura.removeAllItems();
+        cboFigura.addItem(<span class="str">"Círculo"</span>);
+        cboFigura.addItem(<span class="str">"Rectángulo"</span>);
+        cboFigura.addItem(<span class="str">"Cuadrado"</span>);
+        txtDato2.setEnabled(<span class="kw">false</span>);
+    }
+
+    <span class="kw">private void</span> cboFiguraActionPerformed(java.awt.event.ActionEvent evt) {
+        String fig = (String) cboFigura.getSelectedItem();
+        <span class="kw">if</span> (fig.equals(<span class="str">"Círculo"</span>)) {
+            lblDato1.setText(<span class="str">"Radio:"</span>);
+            txtDato2.setEnabled(<span class="kw">false</span>);
+        } <span class="kw">else if</span> (fig.equals(<span class="str">"Rectángulo"</span>)) {
+            lblDato1.setText(<span class="str">"Base:"</span>);
+            txtDato2.setEnabled(<span class="kw">true</span>);
+        } <span class="kw">else</span> {
+            lblDato1.setText(<span class="str">"Lado:"</span>);
+            txtDato2.setEnabled(<span class="kw">false</span>);
+        }
+        limpiarCampos();
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String fig = (String) cboFigura.getSelectedItem();
+        Figura f;
+
+        <span class="kw">try</span> {
+            <span class="kw">double</span> d1 = Double.parseDouble(txtDato1.getText().trim());
+            <span class="kw">if</span> (d1 &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El valor debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+            <span class="kw">if</span> (fig.equals(<span class="str">"Círculo"</span>))      f = <span class="kw">new</span> Circulo(d1);
+            <span class="kw">else if</span> (fig.equals(<span class="str">"Cuadrado"</span>)) f = <span class="kw">new</span> Cuadrado(d1);
+            <span class="kw">else</span> {
+                <span class="kw">double</span> d2 = Double.parseDouble(txtDato2.getText().trim());
+                <span class="kw">if</span> (d2 &lt;= 0) {
+                    JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El valor debe ser mayor que cero."</span>);
+                    <span class="kw">return</span>;
+                }
+                f = <span class="kw">new</span> Rectangulo(d1, d2);
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ingrese valores numéricos válidos."</span>);
+            <span class="kw">return</span>;
+        }
+
+        listaFiguras.add(f);
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{
+            contador++,
+            f.getNombre(),
+            String.format(<span class="str">"%.2f"</span>, f.calcularArea()),        <span class="cmt">// Polimorfismo</span>
+            String.format(<span class="str">"%.2f"</span>, f.calcularPerimetro())   <span class="cmt">// Polimorfismo</span>
+        });
+        limpiarCampos();
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione una figura."</span>);
+            <span class="kw">return</span>;
+        }
+        listaFiguras.remove(fila);
+        modeloTabla.removeRow(fila);
+    }
+}` }
+    ],
+    validar: v => {
+      if (!v.dato1) return { ok:false, tipo:'warn', msg:'Ingrese el primer valor.' };
+      const d1 = parseFloat(v.dato1);
+      if (isNaN(d1) || d1 <= 0) return { ok:false, tipo:'warn', msg:'El valor debe ser mayor que cero.' };
+      if (v.figura === 'Rectángulo') {
+        if (!v.dato2) return { ok:false, tipo:'warn', msg:'Ingrese la altura.' };
+        const d2 = parseFloat(v.dato2);
+        if (isNaN(d2) || d2 <= 0) return { ok:false, tipo:'warn', msg:'La altura debe ser mayor que cero.' };
+      }
+      return { ok:true };
+    },
+    calcularFila: (v, contador) => {
+      const d1 = parseFloat(v.dato1);
+      let area, per;
+      if (v.figura === 'Círculo') {
+        area = Math.PI * d1 * d1; per = 2 * Math.PI * d1;
+      } else if (v.figura === 'Cuadrado') {
+        area = d1 * d1; per = 4 * d1;
+      } else {
+        const d2 = parseFloat(v.dato2);
+        area = d1 * d2; per = 2 * (d1 + d2);
+      }
+      return [contador, v.figura, area.toFixed(2), per.toFixed(2)];
+    }
+  },
+
+  /* ============== EJERCICIO 8 ============== */
+  8: {
+    nombre: "Registro de Notas",
+    paquete: "com.mycompany.registropersonas.ejercicio8",
+    formTitulo: "Registro de Notas",
+    campos: [
+      { id: "codigo", label: "Código:", tipo: "text" },
+      { id: "nombre", label: "Nombre:", tipo: "text" },
+      { id: "n1",     label: "Nota 1:", tipo: "text" },
+      { id: "n2",     label: "Nota 2:", tipo: "text" },
+      { id: "n3",     label: "Nota 3:", tipo: "text" }
+    ],
+    columnas: ["Código", "Nombre", "Nota 1", "Nota 2", "Nota 3", "Promedio", "Estado"],
+    files: [
+      { nombre: "Persona.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio8;
+
+<span class="kw">public class</span> <span class="cls">Persona</span> {
+    <span class="kw">protected</span> String nombre;
+    <span class="kw">public</span> Persona(String nombre) { <span class="kw">this</span>.nombre = nombre; }
+    <span class="kw">public</span> String getNombre() { <span class="kw">return</span> nombre; }
+}` },
+      { nombre: "Alumno.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio8;
+
+<span class="kw">public class</span> <span class="cls">Alumno</span> <span class="kw">extends</span> <span class="cls">Persona</span> {
+    <span class="kw">private final</span> String codigo;
+    <span class="kw">private final double</span> n1, n2, n3;
+
+    <span class="kw">public</span> Alumno(String codigo, String nombre, <span class="kw">double</span> n1, <span class="kw">double</span> n2, <span class="kw">double</span> n3) {
+        <span class="kw">super</span>(nombre);
+        <span class="kw">this</span>.codigo = codigo;
+        <span class="kw">this</span>.n1 = n1; <span class="kw">this</span>.n2 = n2; <span class="kw">this</span>.n3 = n3;
+    }
+
+    <span class="kw">public double</span> calcularPromedio() {
+        <span class="kw">return</span> (n1 + n2 + n3) / 3.0;
+    }
+
+    <span class="kw">public</span> String getEstado() {
+        <span class="kw">return</span> calcularPromedio() &gt;= 11 ? <span class="str">"APROBADO"</span> : <span class="str">"DESAPROBADO"</span>;
+    }
+
+    <span class="kw">public</span> String getCodigo() { <span class="kw">return</span> codigo; }
+    <span class="kw">public double</span> getN1() { <span class="kw">return</span> n1; }
+    <span class="kw">public double</span> getN2() { <span class="kw">return</span> n2; }
+    <span class="kw">public double</span> getN3() { <span class="kw">return</span> n3; }
+}` },
+      { nombre: "FrmNotas.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio8;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmNotas</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Alumno&gt; listaAlumnos = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmNotas() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"Código"</span>, <span class="str">"Nombre"</span>, <span class="str">"Nota 1"</span>, <span class="str">"Nota 2"</span>, <span class="str">"Nota 3"</span>, <span class="str">"Promedio"</span>, <span class="str">"Estado"</span>
+        });
+        modeloTabla.setRowCount(0);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String codigo = txtCodigo.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        String s1 = txtN1.getText().trim();
+        String s2 = txtN2.getText().trim();
+        String s3 = txtN3.getText().trim();
+
+        <span class="kw">if</span> (codigo.isEmpty() || nombre.isEmpty() || s1.isEmpty() || s2.isEmpty() || s3.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">double</span> n1, n2, n3;
+        <span class="kw">try</span> {
+            n1 = Double.parseDouble(s1);
+            n2 = Double.parseDouble(s2);
+            n3 = Double.parseDouble(s3);
+            <span class="kw">if</span> (!enRango(n1) || !enRango(n2) || !enRango(n3)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Las notas deben estar entre 0 y 20."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Las notas deben ser numéricas."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Alumno a : listaAlumnos) {
+            <span class="kw">if</span> (a.getCodigo().equals(codigo)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Código repetido."</span>);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Alumno a = <span class="kw">new</span> Alumno(codigo, nombre, n1, n2, n3);
+        listaAlumnos.add(a);
+        <span class="kw">double</span> prom = a.calcularPromedio();
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{codigo, nombre, n1, n2, n3,
+            String.format(<span class="str">"%.2f"</span>, prom), a.getEstado()});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Promedio: "</span>
+            + String.format(<span class="str">"%.2f"</span>, prom) + <span class="str">" — "</span> + a.getEstado());
+    }
+
+    <span class="kw">private boolean</span> enRango(<span class="kw">double</span> n) { <span class="kw">return</span> n &gt;= 0 &amp;&amp; n &lt;= 20; }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un alumno."</span>);
+            <span class="kw">return</span>;
+        }
+        listaAlumnos.remove(fila);
+        modeloTabla.removeRow(fila);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtCodigo.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtN1.setText(<span class="str">""</span>);
+        txtN2.setText(<span class="str">""</span>);
+        txtN3.setText(<span class="str">""</span>);
+    }
+}` }
+    ],
+    validar: v => {
+      if (!v.codigo || !v.nombre || !v.n1 || !v.n2 || !v.n3) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      const n1 = parseFloat(v.n1), n2 = parseFloat(v.n2), n3 = parseFloat(v.n3);
+      if ([n1,n2,n3].some(n => isNaN(n) || n < 0 || n > 20)) return { ok:false, tipo:'warn', msg:'Las notas deben estar entre 0 y 20.' };
+      return { ok:true };
+    },
+    claveUnica: 'codigo', claveLabel: 'código',
+    calcularFila: v => {
+      const n1 = parseFloat(v.n1), n2 = parseFloat(v.n2), n3 = parseFloat(v.n3);
+      const prom = (n1 + n2 + n3) / 3;
+      return [v.codigo, v.nombre, n1, n2, n3, prom.toFixed(2), prom >= 11 ? 'APROBADO' : 'DESAPROBADO'];
+    }
+  },
+
+  /* ============== EJERCICIO 9 ============== */
+  9: {
+    nombre: "Productos con Descuento",
+    paquete: "com.mycompany.registropersonas.ejercicio9",
+    formTitulo: "Productos con Descuento",
+    campos: [
+      { id: "codigo",   label: "Código:",   tipo: "text" },
+      { id: "nombre",   label: "Nombre:",   tipo: "text" },
+      { id: "precio",   label: "Precio:",   tipo: "text" },
+      { id: "cantidad", label: "Cantidad:", tipo: "text" },
+      { id: "tipo",     label: "Tipo:",     tipo: "combo", opciones: ["Normal", "Con Descuento", "Promocional"] }
+    ],
+    columnas: ["Código", "Producto", "Tipo", "Cant.", "Precio", "Descuento", "Precio Final"],
+    files: [
+      { nombre: "Producto.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio9;
+
+<span class="kw">public abstract class</span> <span class="cls">Producto</span> {
+    <span class="kw">protected</span> String codigo;
+    <span class="kw">protected</span> String nombre;
+    <span class="kw">protected double</span> precio;
+    <span class="kw">protected int</span> cantidad;
+
+    <span class="kw">public</span> Producto(String codigo, String nombre, <span class="kw">double</span> precio, <span class="kw">int</span> cantidad) {
+        <span class="kw">this</span>.codigo = codigo;
+        <span class="kw">this</span>.nombre = nombre;
+        <span class="kw">this</span>.precio = precio;
+        <span class="kw">this</span>.cantidad = cantidad;
+    }
+
+    <span class="cmt">/** Polimorfismo: cada tipo de producto calcula su descuento. */</span>
+    <span class="kw">public abstract double</span> calcularDescuento();
+    <span class="kw">public abstract</span> String getTipo();
+
+    <span class="kw">public double</span> calcularPrecioFinal() {
+        <span class="kw">return</span> (precio * cantidad) - calcularDescuento();
+    }
+
+    <span class="kw">public</span> String getCodigo() { <span class="kw">return</span> codigo; }
+    <span class="kw">public</span> String getNombre() { <span class="kw">return</span> nombre; }
+    <span class="kw">public double</span> getPrecio() { <span class="kw">return</span> precio; }
+    <span class="kw">public int</span> getCantidad() { <span class="kw">return</span> cantidad; }
+}
+
+<span class="kw">class</span> <span class="cls">ProductoNormal</span> <span class="kw">extends</span> <span class="cls">Producto</span> {
+    <span class="kw">public</span> ProductoNormal(String c, String n, <span class="kw">double</span> p, <span class="kw">int</span> q) { <span class="kw">super</span>(c, n, p, q); }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularDescuento() { <span class="kw">return</span> 0; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getTipo() { <span class="kw">return</span> <span class="str">"Normal"</span>; }
+}
+
+<span class="kw">class</span> <span class="cls">ProductoDescuento</span> <span class="kw">extends</span> <span class="cls">Producto</span> {
+    <span class="kw">public</span> ProductoDescuento(String c, String n, <span class="kw">double</span> p, <span class="kw">int</span> q) { <span class="kw">super</span>(c, n, p, q); }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularDescuento() { <span class="kw">return</span> precio * cantidad * 0.10; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getTipo() { <span class="kw">return</span> <span class="str">"Con Descuento"</span>; }
+}
+
+<span class="kw">class</span> <span class="cls">ProductoPromocional</span> <span class="kw">extends</span> <span class="cls">Producto</span> {
+    <span class="kw">public</span> ProductoPromocional(String c, String n, <span class="kw">double</span> p, <span class="kw">int</span> q) { <span class="kw">super</span>(c, n, p, q); }
+    <span class="ann">@Override</span>
+    <span class="kw">public double</span> calcularDescuento() {
+        <span class="kw">if</span> (cantidad &gt;= 3) <span class="kw">return</span> precio * cantidad * 0.20;
+        <span class="kw">return</span> 0;
+    }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getTipo() { <span class="kw">return</span> <span class="str">"Promocional"</span>; }
+}` },
+      { nombre: "FrmProducto.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio9;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmProducto</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Producto&gt; listaProductos = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmProducto() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"Código"</span>, <span class="str">"Producto"</span>, <span class="str">"Tipo"</span>, <span class="str">"Cant."</span>, <span class="str">"Precio"</span>, <span class="str">"Descuento"</span>, <span class="str">"Precio Final"</span>
+        });
+        modeloTabla.setRowCount(0);
+        cboTipo.removeAllItems();
+        cboTipo.addItem(<span class="str">"Normal"</span>);
+        cboTipo.addItem(<span class="str">"Con Descuento"</span>);
+        cboTipo.addItem(<span class="str">"Promocional"</span>);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String codigo = txtCodigo.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        String tipo   = (String) cboTipo.getSelectedItem();
+        String pStr   = txtPrecio.getText().trim();
+        String qStr   = txtCantidad.getText().trim();
+
+        <span class="kw">if</span> (codigo.isEmpty() || nombre.isEmpty() || pStr.isEmpty() || qStr.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">double</span> precio;
+        <span class="kw">int</span> cantidad;
+        <span class="kw">try</span> {
+            precio = Double.parseDouble(pStr);
+            cantidad = Integer.parseInt(qStr);
+            <span class="kw">if</span> (precio &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El precio debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+            <span class="kw">if</span> (cantidad &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"La cantidad debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Precio y cantidad deben ser numéricos."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Producto p : listaProductos) {
+            <span class="kw">if</span> (p.getCodigo().equals(codigo)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Código repetido."</span>);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Producto p;
+        <span class="kw">if</span> (tipo.equals(<span class="str">"Normal"</span>))            p = <span class="kw">new</span> ProductoNormal(codigo, nombre, precio, cantidad);
+        <span class="kw">else if</span> (tipo.equals(<span class="str">"Con Descuento"</span>)) p = <span class="kw">new</span> ProductoDescuento(codigo, nombre, precio, cantidad);
+        <span class="kw">else</span>                                      p = <span class="kw">new</span> ProductoPromocional(codigo, nombre, precio, cantidad);
+
+        listaProductos.add(p);
+        <span class="kw">double</span> desc = p.calcularDescuento();       <span class="cmt">// Polimorfismo</span>
+        <span class="kw">double</span> fin  = p.calcularPrecioFinal();
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{
+            codigo, nombre, tipo, cantidad,
+            String.format(<span class="str">"%.2f"</span>, precio),
+            String.format(<span class="str">"%.2f"</span>, desc),
+            String.format(<span class="str">"%.2f"</span>, fin)
+        });
+        limpiarCampos();
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un producto."</span>);
+            <span class="kw">return</span>;
+        }
+        listaProductos.remove(fila);
+        modeloTabla.removeRow(fila);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtCodigo.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtPrecio.setText(<span class="str">""</span>);
+        txtCantidad.setText(<span class="str">""</span>);
+        cboTipo.setSelectedIndex(0);
+    }
+}` }
+    ],
+    validar: v => {
+      if (!v.codigo || !v.nombre || !v.precio || !v.cantidad) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      const p = parseFloat(v.precio);
+      if (isNaN(p) || p <= 0) return { ok:false, tipo:'warn', msg:'El precio debe ser mayor que cero.' };
+      const c = parseInt(v.cantidad, 10);
+      if (isNaN(c) || c <= 0) return { ok:false, tipo:'warn', msg:'La cantidad debe ser mayor que cero.' };
+      return { ok:true };
+    },
+    claveUnica: 'codigo', claveLabel: 'código',
+    calcularFila: v => {
+      const p = parseFloat(v.precio);
+      const c = parseInt(v.cantidad, 10);
+      let desc = 0;
+      if (v.tipo === 'Con Descuento') desc = p * c * 0.10;
+      else if (v.tipo === 'Promocional' && c >= 3) desc = p * c * 0.20;
+      const fin = (p * c) - desc;
+      return [v.codigo, v.nombre, v.tipo, c, p.toFixed(2), desc.toFixed(2), fin.toFixed(2)];
+    }
+  },
+
+  /* ============== EJERCICIO 10 ============== */
+  10: {
+    nombre: "Registro de Empleados y Pago",
+    paquete: "com.mycompany.registropersonas.ejercicio10",
+    formTitulo: "Registro de Empleados y Pago",
+    campos: [
+      { id: "codigo", label: "Código:", tipo: "text" },
+      { id: "nombre", label: "Nombre:", tipo: "text" },
+      { id: "dni",    label: "DNI:",    tipo: "text" },
+      { id: "tipo",   label: "Tipo:",   tipo: "combo",
+        opciones: ["Empleado por horas", "Empleado por comisión", "Empleado con sueldo fijo"] },
+      { id: "dato",   label: "Horas trabajadas:", tipo: "text" }
+    ],
+    columnas: ["Código", "DNI", "Nombre", "Tipo", "Pago"],
+    files: [
+      { nombre: "Empleado.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio10;
+
+<span class="kw">public abstract class</span> <span class="cls">Empleado</span> {
+    <span class="kw">protected</span> String codigo;
+    <span class="kw">protected</span> String nombre;
+    <span class="kw">protected</span> String dni;
+
+    <span class="kw">public</span> Empleado(String codigo, String nombre, String dni) {
+        <span class="kw">this</span>.codigo = codigo;
+        <span class="kw">this</span>.nombre = nombre;
+        <span class="kw">this</span>.dni = dni;
+    }
+
+    <span class="cmt">/** Polimorfismo: cada tipo de empleado calcula su pago. */</span>
+    <span class="kw">public abstract double</span> calcularPago();
+    <span class="kw">public abstract</span> String getTipo();
+
+    <span class="kw">public</span> String getCodigo() { <span class="kw">return</span> codigo; }
+    <span class="kw">public</span> String getNombre() { <span class="kw">return</span> nombre; }
+    <span class="kw">public</span> String getDni()    { <span class="kw">return</span> dni; }
+}
+
+<span class="cmt">// Empleado por horas: S/ 15 x hora</span>
+<span class="kw">class</span> <span class="cls">EmpleadoPorHoras</span> <span class="kw">extends</span> <span class="cls">Empleado</span> {
+    <span class="kw">private final double</span> horas;
+    <span class="kw">public</span> EmpleadoPorHoras(String c, String n, String d, <span class="kw">double</span> h) {
+        <span class="kw">super</span>(c, n, d); horas = h;
+    }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularPago() { <span class="kw">return</span> horas * 15.0; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getTipo() { <span class="kw">return</span> <span class="str">"Por horas"</span>; }
+}
+
+<span class="cmt">// Empleado por comisión: 8% de ventas</span>
+<span class="kw">class</span> <span class="cls">EmpleadoPorComision</span> <span class="kw">extends</span> <span class="cls">Empleado</span> {
+    <span class="kw">private final double</span> ventas;
+    <span class="kw">public</span> EmpleadoPorComision(String c, String n, String d, <span class="kw">double</span> v) {
+        <span class="kw">super</span>(c, n, d); ventas = v;
+    }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularPago() { <span class="kw">return</span> ventas * 0.08; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getTipo() { <span class="kw">return</span> <span class="str">"Por comisión"</span>; }
+}
+
+<span class="cmt">// Empleado con sueldo fijo</span>
+<span class="kw">class</span> <span class="cls">EmpleadoSueldoFijo</span> <span class="kw">extends</span> <span class="cls">Empleado</span> {
+    <span class="kw">private final double</span> sueldo;
+    <span class="kw">public</span> EmpleadoSueldoFijo(String c, String n, String d, <span class="kw">double</span> s) {
+        <span class="kw">super</span>(c, n, d); sueldo = s;
+    }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularPago() { <span class="kw">return</span> sueldo; }
+    <span class="ann">@Override</span> <span class="kw">public</span> String getTipo() { <span class="kw">return</span> <span class="str">"Sueldo fijo"</span>; }
+}` },
+      { nombre: "FrmEmpleado.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio10;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmEmpleado</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Empleado&gt; listaEmpleados = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmEmpleado() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"Código"</span>, <span class="str">"DNI"</span>, <span class="str">"Nombre"</span>, <span class="str">"Tipo"</span>, <span class="str">"Pago"</span>
+        });
+        modeloTabla.setRowCount(0);
+        cboTipo.removeAllItems();
+        cboTipo.addItem(<span class="str">"Empleado por horas"</span>);
+        cboTipo.addItem(<span class="str">"Empleado por comisión"</span>);
+        cboTipo.addItem(<span class="str">"Empleado con sueldo fijo"</span>);
+    }
+
+    <span class="kw">private void</span> cboTipoActionPerformed(java.awt.event.ActionEvent evt) {
+        String t = (String) cboTipo.getSelectedItem();
+        <span class="kw">if</span> (t.equals(<span class="str">"Empleado por horas"</span>))       lblDato.setText(<span class="str">"Horas trabajadas:"</span>);
+        <span class="kw">else if</span> (t.equals(<span class="str">"Empleado por comisión"</span>)) lblDato.setText(<span class="str">"Total de ventas:"</span>);
+        <span class="kw">else</span>                                          lblDato.setText(<span class="str">"Sueldo mensual:"</span>);
+        txtDato.setText(<span class="str">""</span>);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String codigo = txtCodigo.getText().trim();
+        String nombre = txtNombre.getText().trim();
+        String dni    = txtDni.getText().trim();
+        String tipo   = (String) cboTipo.getSelectedItem();
+        String dStr   = txtDato.getText().trim();
+
+        <span class="kw">if</span> (codigo.isEmpty() || nombre.isEmpty() || dni.isEmpty() || dStr.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">double</span> dato;
+        <span class="kw">try</span> {
+            dato = Double.parseDouble(dStr);
+            <span class="kw">if</span> (dato &lt; 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El valor debe ser >= 0."</span>);
+                <span class="kw">return</span>;
+            }
+            <span class="kw">if</span> (tipo.equals(<span class="str">"Empleado con sueldo fijo"</span>) &amp;&amp; dato &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El sueldo debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Valor numérico inválido."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Empleado e : listaEmpleados) {
+            <span class="kw">if</span> (e.getCodigo().equals(codigo)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Código repetido."</span>);
+                <span class="kw">return</span>;
+            }
+            <span class="kw">if</span> (e.getDni().equals(dni)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"DNI repetido."</span>);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Empleado emp;
+        <span class="kw">if</span> (tipo.equals(<span class="str">"Empleado por horas"</span>))
+            emp = <span class="kw">new</span> EmpleadoPorHoras(codigo, nombre, dni, dato);
+        <span class="kw">else if</span> (tipo.equals(<span class="str">"Empleado por comisión"</span>))
+            emp = <span class="kw">new</span> EmpleadoPorComision(codigo, nombre, dni, dato);
+        <span class="kw">else</span>
+            emp = <span class="kw">new</span> EmpleadoSueldoFijo(codigo, nombre, dni, dato);
+
+        listaEmpleados.add(emp);
+        <span class="kw">double</span> pago = emp.calcularPago();   <span class="cmt">// Polimorfismo</span>
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{codigo, dni, nombre, emp.getTipo(),
+            String.format(<span class="str">"%.2f"</span>, pago)});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Pago: S/ "</span> + String.format(<span class="str">"%.2f"</span>, pago));
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un empleado."</span>);
+            <span class="kw">return</span>;
+        }
+        listaEmpleados.remove(fila);
+        modeloTabla.removeRow(fila);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtCodigo.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtDni.setText(<span class="str">""</span>);
+        txtDato.setText(<span class="str">""</span>);
+        cboTipo.setSelectedIndex(0);
+        lblDato.setText(<span class="str">"Horas trabajadas:"</span>);
+    }
+}` }
+    ],
+    validar: v => {
+      if (!v.codigo || !v.nombre || !v.dni || !v.dato) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      const d = parseFloat(v.dato);
+      if (isNaN(d) || d < 0) return { ok:false, tipo:'warn', msg:'El valor debe ser >= 0.' };
+      if (v.tipo === 'Empleado con sueldo fijo' && d <= 0) return { ok:false, tipo:'warn', msg:'El sueldo fijo debe ser mayor que cero.' };
+      return { ok:true };
+    },
+    claveUnica: 'codigo', claveLabel: 'código',
+    calcularFila: v => {
+      const d = parseFloat(v.dato);
+      let pago;
+      let tipoCorto;
+      if (v.tipo === 'Empleado por horas') { pago = d * 15; tipoCorto = 'Por horas'; }
+      else if (v.tipo === 'Empleado por comisión') { pago = d * 0.08; tipoCorto = 'Por comisión'; }
+      else { pago = d; tipoCorto = 'Sueldo fijo'; }
+      return [v.codigo, v.dni, v.nombre, tipoCorto, pago.toFixed(2)];
+    }
+  }
+};
+
+/* =========================================================
+   ESTADO GLOBAL
+   ========================================================= */
+let ejercicioActual = 6;
+let indiceArchivo = 0;
+let seleccionado = -1;
+const registros = {};
+const tablasDatos = {};
+const contadores = {};
+
+const $ = id => document.getElementById(id);
+
+/* =========================================================
+   JOptionPane
+   ========================================================= */
+function mostrarMensaje(texto, tipo = 'info') {
+  const iconos = { info:'i', warn:'!', error:'✕' };
+  const titulos = { info:'Información', warn:'Advertencia', error:'Error' };
+  $('dlgIcon').className = 'jdialog-icon icon-' + tipo;
+  $('dlgIcon').textContent = iconos[tipo];
+  $('dlgTitle').textContent = titulos[tipo];
+  $('dlgText').textContent = texto;
+  $('overlay').classList.add('show');
+  $('dlgOk').focus();
+}
+$('dlgOk').addEventListener('click', () => $('overlay').classList.remove('show'));
+$('overlay').addEventListener('click', e => { if (e.target === $('overlay')) $('overlay').classList.remove('show'); });
+
+/* =========================================================
+   ÁRBOL
+   ========================================================= */
+function renderTree() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const tree = $('tree');
+  let filesHTML = '';
+  ex.files.forEach((f, i) => {
+    filesHTML += `<div class="tree-node indent-5 ${i === indiceArchivo ? 'active' : ''}"
+                       onclick="showFile(${i})">📄 ${f.nombre}</div>`;
+  });
+  tree.innerHTML = `
+    <div class="tree-node" style="font-weight:bold;">📁 PracticoSwing</div>
+    <div class="tree-node indent-1" style="font-weight:bold;">📁 RegistroPersonas</div>
+    <div class="tree-node indent-2" style="font-weight:bold;">📁 Source Packages</div>
+    <div class="tree-node indent-3" style="font-weight:bold;">📁 com.mycompany.registropersonas</div>
+    <div class="tree-node indent-4" style="font-weight:bold;">📁 ejercicio${ejercicioActual}</div>
+    ${filesHTML}
+    <div class="tree-node indent-2" style="font-weight:bold;">📁 Dependencies</div>
+    <div class="tree-node indent-2" style="font-weight:bold;">📁 Project Files</div>
+  `;
+}
+
+function showFile(i) {
+  indiceArchivo = i;
+  renderTree();
+  renderSource();
+  switchTab('source');
+}
+
+/* =========================================================
+   CÓDIGO
+   ========================================================= */
+function renderSource() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const code = ex.files[indiceArchivo].codigo;
+  $('viewSource').innerHTML = code.split('\n').map((line, i) =>
+    `<div class="code-line"><span class="line-num">${i + 1}</span>${line}</div>`
+  ).join('');
+}
+
+/* =========================================================
+   DISEÑO
+   ========================================================= */
+function renderDesign() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const design = $('viewDesign');
+
+  let camposHTML = '';
+  ex.campos.forEach(c => {
+    if (c.tipo === 'combo') {
+      camposHTML += `
+        <label for="${c.id}">${c.label}</label>
+        <select id="${c.id}">
+          ${c.opciones.map(o => `<option value="${o}">${o}</option>`).join('')}
+        </select>`;
+    } else {
+      camposHTML += `
+        <label for="${c.id}">${c.label}</label>
+        <input id="${c.id}" type="text" autocomplete="off">`;
+    }
+  });
+
+  design.innerHTML = `
+    <div class="jframe">
+      <div class="jframe-titlebar">
+        <span class="title-icon">▣</span>
+        <span class="title-text">${ex.formTitulo}</span>
+        <div class="jframe-win-btns">
+          <button class="jframe-win-btn">—</button>
+          <button class="jframe-win-btn">▢</button>
+          <button class="jframe-win-btn close">✕</button>
+        </div>
+      </div>
+      <div class="jframe-content">
+        <fieldset class="jpanel-titled">
+          <legend>Datos</legend>
+          <div class="jgrid">${camposHTML}</div>
+          <div class="jbuttons">
+            <button class="jbtn" id="btnAccion">Registrar</button>
+            <button class="jbtn" id="btnEliminar">Eliminar</button>
+            <button class="jbtn" id="btnLimpiar">Limpiar</button>
+          </div>
+        </fieldset>
+        <div class="jscrollpane">
+          <table class="jtable">
+            <thead>
+              <tr>${ex.columnas.map(col => `<th>${col}</th>`).join('')}</tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (ejercicioActual === 7) {
+    const cbo = $('figura');
+    const updateUI = () => {
+      const fig = cbo.value;
+      const lbl1 = document.querySelector('label[for="dato1"]');
+      const lbl2 = document.querySelector('label[for="dato2"]');
+      const in1 = $('dato1');
+      const in2 = $('dato2');
+      if (fig === 'Círculo') { lbl1.textContent = 'Radio:'; in2.disabled = true; in2.value = ''; }
+      else if (fig === 'Cuadrado') { lbl1.textContent = 'Lado:'; in2.disabled = true; in2.value = ''; }
+      else { lbl1.textContent = 'Base:'; in2.disabled = false; }
+      lbl2.style.opacity = in2.disabled ? '0.4' : '1';
+      in1.focus();
+    };
+    cbo.addEventListener('change', updateUI);
+    updateUI();
+  }
+
+  if (ejercicioActual === 10) {
+    const cbo = $('tipo');
+    const updateUI = () => {
+      const t = cbo.value;
+      const lbl = document.querySelector('label[for="dato"]');
+      if (t === 'Empleado por horas') lbl.textContent = 'Horas trabajadas:';
+      else if (t === 'Empleado por comisión') lbl.textContent = 'Total de ventas:';
+      else lbl.textContent = 'Sueldo mensual:';
+      $('dato').value = '';
+      $('dato').focus();
+    };
+    cbo.addEventListener('change', updateUI);
+    updateUI();
+  }
+
+  if (ejercicioActual === 6) {
+    const cbo = $('tipo');
+    const updateUI = () => {
+      const t = cbo.value;
+      const inVentas = $('ventas');
+      const lblVentas = document.querySelector('label[for="ventas"]');
+      if (t === 'Administrativo') {
+        inVentas.disabled = true; inVentas.value = '';
+        lblVentas.style.opacity = '0.4';
+      } else {
+        inVentas.disabled = false;
+        lblVentas.style.opacity = '1';
+      }
+    };
+    cbo.addEventListener('change', updateUI);
+    updateUI();
+  }
+
+  $('btnAccion').addEventListener('click', registrar);
+  $('btnEliminar').addEventListener('click', eliminar);
+  $('btnLimpiar').addEventListener('click', () => limpiarCampos(true));
+  ex.campos.forEach(c => {
+    const el = $(c.id);
+    if (el && el.tagName === 'INPUT') {
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') registrar(); });
+    }
+  });
+
+  renderTabla();
+}
+
+/* =========================================================
+   REGISTRAR / ELIMINAR / LIMPIAR
+   ========================================================= */
+function leerValores() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const v = {};
+  ex.campos.forEach(c => {
+    const el = $(c.id);
+    v[c.id] = el ? el.value.trim() : '';
+  });
+  return v;
+}
+
+function registrar() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const v = leerValores();
+  const res = ex.validar(v);
+  if (!res.ok) return mostrarMensaje(res.msg, res.tipo);
+
+  if (ex.claveUnica) {
+    if (!registros[ejercicioActual]) registros[ejercicioActual] = {};
+    if (registros[ejercicioActual][v[ex.claveUnica]]) {
+      return mostrarMensaje(`Ya existe un registro con el ${ex.claveLabel} ${v[ex.claveUnica]}.`, 'error');
+    }
+    registros[ejercicioActual][v[ex.claveUnica]] = v;
+  }
+
+  if (!contadores[ejercicioActual]) contadores[ejercicioActual] = 1;
+  const c = contadores[ejercicioActual];
+
+  const fila = ex.calcularFila(v, c);
+  if (ejercicioActual === 7) contadores[ejercicioActual]++;
+
+  if (!tablasDatos[ejercicioActual]) tablasDatos[ejercicioActual] = [];
+  tablasDatos[ejercicioActual].push(fila);
+
+  renderTabla();
+  limpiarCampos(false);
+
+  let msg = 'Registro guardado correctamente.';
+  if (ejercicioActual === 6) msg = `Trabajador registrado. Sueldo final: S/ ${fila[5]}`;
+  if (ejercicioActual === 7) msg = `Figura: ${fila[1]} | Área: ${fila[2]} | Perímetro: ${fila[3]}`;
+  if (ejercicioActual === 8) msg = `Promedio: ${fila[5]} — ${fila[6]}`;
+  if (ejercicioActual === 9) msg = `Precio final: S/ ${fila[6]}`;
+  if (ejercicioActual === 10) msg = `Pago: S/ ${fila[4]}`;
+  mostrarMensaje(msg, 'info');
+}
+
+function eliminar() {
+  if (seleccionado < 0) return mostrarMensaje('Seleccione un registro de la tabla para eliminar.', 'warn');
+  tablasDatos[ejercicioActual].splice(seleccionado, 1);
+  seleccionado = -1;
+  renderTabla();
+  mostrarMensaje('Registro eliminado.', 'info');
+}
+
+function limpiarCampos(enfocar = true) {
+  const ex = EJERCICIOS[ejercicioActual];
+  ex.campos.forEach(c => {
+    const el = $(c.id);
+    if (!el) return;
+    if (c.tipo === 'combo') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  if (enfocar) {
+    const p = $(ex.campos[0].id);
+    if (p && !p.disabled) p.focus();
+  }
+  if (ejercicioActual === 6 || ejercicioActual === 7 || ejercicioActual === 10) {
+    const cboTipo = $(ex.campos.find(c => c.tipo === 'combo').id);
+    if (cboTipo) cboTipo.dispatchEvent(new Event('change'));
+  }
+}
+
+function renderTabla() {
+  const tbody = $('tbody');
+  if (!tbody) return;
+  const ex = EJERCICIOS[ejercicioActual];
+  const datos = tablasDatos[ejercicioActual] || [];
+
+  tbody.innerHTML = '';
+  if (datos.length === 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'empty-row';
+    const td = document.createElement('td');
+    td.colSpan = ex.columnas.length;
+    td.textContent = 'No hay registros.';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  } else {
+    datos.forEach((fila, i) => {
+      const tr = document.createElement('tr');
+      if (i === seleccionado) tr.classList.add('selected');
+      fila.forEach(val => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tr.addEventListener('click', () => { seleccionado = i; renderTabla(); });
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+/* =========================================================
+   TABS
+   ========================================================= */
+function switchTab(tab) {
+  const vs = $('viewSource'), vd = $('viewDesign');
+  const ts = $('tabSource'), td = $('tabDesign');
+  if (tab === 'source') {
+    vs.classList.add('active'); vd.classList.remove('active');
+    ts.classList.add('active'); td.classList.remove('active');
+  } else {
+    vs.classList.remove('active'); vd.classList.add('active');
+    ts.classList.remove('active'); td.classList.add('active');
+    renderDesign();
+  }
+}
+
+/* =========================================================
+   CAMBIO DE EJERCICIO
+   ========================================================= */
+document.querySelectorAll('.ex-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ejercicioActual = parseInt(btn.dataset.ex, 10);
+    indiceArchivo = 0;
+    seleccionado = -1;
+    renderTree();
+    renderSource();
+    switchTab('source');
+    $('outputLog').innerHTML =
+      `<span class="out-green">--- exec:3.0:exec (default-cli) @ RegistroPersonas ---</span><br>` +
+      `Cargando ejercicio ${ejercicioActual}: ${EJERCICIOS[ejercicioActual].nombre}...<br>` +
+      `<span class="out-blue">-------------------------------------------------------</span><br>` +
+      `<span class="out-green">BUILD SUCCESSFUL</span>`;
+  });
+});
+
+/* =========================================================
+   BOTÓN RUN
+   ========================================================= */
+$('btnRun').addEventListener('click', () => {
+  $('outputLog').innerHTML =
+    `<span class="out-green">--- exec:3.0:exec (default-cli) @ RegistroPersonas ---</span><br>` +
+    `Ejecutando ejercicio ${ejercicioActual}...<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span><br>` +
+    `<span class="out-green">BUILD SUCCESSFUL</span><br>` +
+    `Total time: 4.212 s<br>` +
+    `Finished at: ${new Date().toISOString().replace('T', ' ').substring(0, 19)}<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span>`;
+  switchTab('design');
+});
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+window.addEventListener('load', () => {
+  renderTree();
+  renderSource();
+  $('outputLog').innerHTML =
+    `<span class="out-green">--- exec:3.0:exec (default-cli) @ RegistroPersonas ---</span><br>` +
+    `Hello World!<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span><br>` +
+    `<span class="out-green">BUILD SUCCESSFUL</span><br>` +
+    `Total time: 5.081 s<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span>`;
+});
+</script>
+</body>
+</html>

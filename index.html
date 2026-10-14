@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>NetBeans Simulator - Ejercicios 1 al 5</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", Tahoma, sans-serif; font-size: 12px; background: #1e1e1e; color: #333; height: 100vh; overflow: hidden; }
+.ide { display: flex; flex-direction: column; height: 100vh; background: #F0F0F0; }
+
+/* Toolbar */
+.toolbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: linear-gradient(#FDFDFD, #E8E8E8); border-bottom: 1px solid #C8C8C8; height: 34px; flex-wrap: wrap; }
+.toolbar-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 3px; cursor: pointer; font-size: 14px; }
+.toolbar-icon:hover { background: #D6E6F7; border-color: #7EB4EA; }
+.toolbar-icon.run { color: #2E8B57; font-weight: bold; }
+.toolbar-sep { width: 1px; height: 20px; background: #CCC; margin: 0 4px; }
+.toolbar-label { color: #555; font-size: 11px; margin-left: 8px; }
+.exercise-selector { display: flex; gap: 4px; margin-left: 12px; flex-wrap: wrap; align-items: center; }
+.ex-btn { padding: 3px 10px; font-size: 11px; font-family: inherit; background: linear-gradient(#FDFDFD, #E3E3E3); border: 1px solid #ADADAD; border-radius: 3px; cursor: pointer; color: #333; }
+.ex-btn:hover { background: linear-gradient(#EDF4FC, #D6E6F7); border-color: #7EB4EA; }
+.ex-btn.active { background: linear-gradient(#3875D7, #2E5FA8); color: #fff; border-color: #1E4A8A; }
+
+/* Nav link al siguiente bloque */
+.nav-link {
+  margin-left: auto;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(#4CAF50, #388E3C);
+  border: 1px solid #2E7D32;
+  border-radius: 3px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+.nav-link:hover {
+  background: linear-gradient(#66BB6A, #43A047);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, .3), 0 2px 5px rgba(0,0,0,.2);
+  transform: translateY(-1px);
+}
+.nav-link:active {
+  transform: translateY(0);
+  background: linear-gradient(#388E3C, #2E7D32);
+}
+
+/* Workspace */
+.workspace { display: flex; flex: 1; overflow: hidden; }
+
+/* LEFT */
+.left-panel { width: 250px; background: #F0F0F0; border-right: 1px solid #C8C8C8; display: flex; flex-direction: column; overflow: hidden; }
+.panel-header { padding: 4px 8px; background: linear-gradient(#FAFAFA, #E8E8E8); border-bottom: 1px solid #D0D0D0; font-weight: 600; color: #333; font-size: 11px; }
+.tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+.tree-node { padding: 3px 8px 3px 16px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #333; white-space: nowrap; }
+.tree-node:hover { background: #EAF2FB; }
+.tree-node.active { background: #3875D7; color: #fff; }
+.tree-node .icon { font-size: 13px; width: 16px; text-align: center; }
+.tree-node.indent-1 { padding-left: 32px; }
+.tree-node.indent-2 { padding-left: 48px; }
+.tree-node.indent-3 { padding-left: 64px; }
+.tree-node.indent-4 { padding-left: 80px; }
+.tree-node.indent-5 { padding-left: 96px; }
+
+/* CENTER */
+.center-panel { flex: 1; display: flex; flex-direction: column; background: #FFF; overflow: hidden; }
+.editor-tabs { display: flex; background: #E8E8E8; border-bottom: 1px solid #C8C8C8; height: 28px; }
+.editor-tab { padding: 0 16px; display: flex; align-items: center; gap: 6px; border-right: 1px solid #D0D0D0; cursor: pointer; color: #555; font-size: 11px; }
+.editor-tab.active { background: #FFF; color: #000; border-bottom: 1px solid #FFF; margin-bottom: -1px; font-weight: 600; }
+.editor-content { flex: 1; overflow: auto; padding: 12px 0; background: #FFF; font-family: "Consolas", "Courier New", monospace; font-size: 12.5px; line-height: 1.5; display: none; }
+.editor-content.active { display: block; }
+
+/* Code */
+.kw { color: #0000FF; font-weight: bold; }
+.str { color: #008000; }
+.cmt { color: #808080; font-style: italic; }
+.cls { color: #2B91AF; }
+.num { color: #098658; }
+.ann { color: #808080; }
+.code-line { padding: 0 16px; white-space: pre; }
+.code-line:hover { background: #F5F5F5; }
+.line-num { display: inline-block; width: 30px; text-align: right; padding-right: 12px; color: #999; user-select: none; }
+
+/* Design */
+.design-view { flex: 1; display: none; background: #F0F0F0; overflow: auto; padding: 20px; align-items: flex-start; justify-content: center; }
+.design-view.active { display: flex; }
+
+/* RIGHT */
+.right-panel { width: 200px; background: #F0F0F0; border-left: 1px solid #C8C8C8; display: flex; flex-direction: column; }
+.palette-group { padding: 8px; font-size: 11px; color: #555; border-bottom: 1px solid #E0E0E0; }
+.palette-item { padding: 2px 0; color: #333; cursor: default; }
+
+/* BOTTOM */
+.bottom-panel { height: 120px; background: #FFF; border-top: 1px solid #C8C8C8; display: flex; flex-direction: column; overflow: hidden; }
+.output-tabs { display: flex; background: #E8E8E8; border-bottom: 1px solid #C8C8C8; height: 26px; }
+.output-tab { padding: 0 14px; display: flex; align-items: center; border-right: 1px solid #D0D0D0; font-size: 11px; color: #555; cursor: pointer; }
+.output-tab.active { background: #FFF; color: #000; font-weight: 600; }
+.output-content { flex: 1; background: #1E1E1E; color: #D4D4D4; font-family: "Consolas", monospace; font-size: 12px; padding: 8px 12px; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; }
+.out-green { color: #6A9955; }
+.out-blue { color: #569CD6; }
+
+/* SWING APP */
+.jframe { width: 680px; background: #F0F0F0; border: 1px solid #5A5A5A; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.4); overflow: hidden; user-select: none; }
+.jframe-titlebar { height: 30px; display: flex; align-items: center; gap: 8px; padding-left: 10px; background: linear-gradient(#FAFAFA, #EDEDED); border-bottom: 1px solid #DCDCDC; }
+.jframe-titlebar .title-icon { font-size: 13px; color: #2E7DD1; }
+.jframe-titlebar .title-text { flex: 1; color: #1a1a1a; font-size: 12px; }
+.jframe-win-btns { display: flex; height: 100%; }
+.jframe-win-btn { width: 40px; height: 100%; border: none; background: transparent; cursor: pointer; font-size: 11px; color: #333; }
+.jframe-win-btn:hover { background: #E5E5E5; }
+.jframe-win-btn.close:hover { background: #E81123; color: #fff; }
+
+.jframe-content { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.jpanel-titled { border: 1px solid #C8C8C8; border-radius: 3px; background: #F7F7F7; padding: 6px 14px 14px; margin: 0; }
+.jpanel-titled > legend { font-size: 11px; color: #333; padding: 0 6px; margin-left: 4px; }
+.jgrid { display: grid; grid-template-columns: 90px 1fr 90px 1fr; gap: 9px 10px; align-items: center; }
+.jgrid label { text-align: right; color: #222; font-size: 12px; }
+.jgrid input, .jgrid select { height: 24px; padding: 0 6px; border: 1px solid #B5B5B5; border-radius: 2px; background: #fff; font-family: inherit; font-size: 12px; color: #111; outline: none; }
+.jgrid input:focus, .jgrid select:focus { border-color: #4A90D9; box-shadow: 0 0 0 1px #A8CDF0; }
+.jbuttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.jbtn { padding: 5px 16px; font-family: inherit; font-size: 12px; color: #1a1a1a; background: linear-gradient(#FDFDFD, #E3E3E3); border: 1px solid #ADADAD; border-radius: 3px; cursor: pointer; }
+.jbtn:hover { background: linear-gradient(#EDF4FC, #D6E6F7); border-color: #7EB4EA; }
+.jbtn:active { background: linear-gradient(#D6E6F7, #C3DBF3); }
+
+.jscrollpane { height: 160px; overflow: auto; border: 1px solid #B5B5B5; background: #fff; }
+.jtable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.jtable thead th { position: sticky; top: 0; padding: 5px 8px; text-align: left; font-weight: normal; color: #333; background: linear-gradient(#FFFFFF, #E8E8E8); border-right: 1px solid #D5D5D5; border-bottom: 1px solid #C0C0C0; }
+.jtable tbody td { padding: 4px 8px; color: #222; border-bottom: 1px solid #EDEDED; }
+.jtable tbody tr:nth-child(even) { background: #F8F8F8; }
+.jtable tbody tr:hover { background: #EAF2FB; cursor: default; }
+.jtable tbody tr.selected td { background: #3875D7; color: #fff; }
+.jtable tbody tr.empty-row td { background: #fff; color: #999; font-style: italic; text-align: center; padding: 14px; }
+.jresult { background: #FFFBE6; border: 1px solid #E8D77A; border-radius: 3px; padding: 12px 16px; font-size: 14px; color: #333; margin-top: 10px; text-align: center; }
+.jresult strong { color: #B8860B; font-size: 18px; }
+
+/* JOptionPane */
+.joverlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.25); z-index: 100; }
+.joverlay.show { display: flex; }
+.jdialog { width: 360px; background: #F0F0F0; border: 1px solid #5A5A5A; border-radius: 3px; box-shadow: 0 12px 34px rgba(0,0,0,.55); }
+.jdialog-title { padding: 6px 10px; font-weight: 600; color: #1a1a1a; background: linear-gradient(#FAFAFA, #E8E8E8); border-bottom: 1px solid #D0D0D0; }
+.jdialog-body { display: flex; gap: 12px; padding: 16px 14px; align-items: flex-start; }
+.jdialog-icon { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: bold; }
+.icon-info { background: #2E7DD1; }
+.icon-warn { background: #E8A33D; }
+.icon-error { background: #D64541; }
+.jdialog-text { font-size: 12px; line-height: 1.5; color: #222; padding-top: 5px; }
+.jdialog-footer { padding: 0 14px 14px; display: flex; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<div class="ide">
+  <div class="toolbar">
+    <div class="toolbar-icon" title="New">📄</div>
+    <div class="toolbar-icon" title="Open">📂</div>
+    <div class="toolbar-icon" title="Save">💾</div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-icon run" id="btnRun" title="Run">▶</div>
+    <div class="toolbar-sep"></div>
+    <span class="toolbar-label">Ejercicios:</span>
+    <div class="exercise-selector">
+      <button class="ex-btn active" data-ex="1">Ej. 1 Personas</button>
+      <button class="ex-btn" data-ex="2">Ej. 2 Alumnos</button>
+      <button class="ex-btn" data-ex="3">Ej. 3 Vehículos</button>
+      <button class="ex-btn" data-ex="4">Ej. 4 Áreas</button>
+      <button class="ex-btn" data-ex="5">Ej. 5 Productos</button>
+      <a href="eje6-10.html" class="nav-link" title="Ir a los ejercicios 6 al 10">
+        Ej. 6-10 →
+      </a>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <div class="left-panel">
+      <div class="panel-header">Projects</div>
+      <div class="tree" id="tree"></div>
+    </div>
+    <div class="center-panel">
+      <div class="editor-tabs">
+        <div class="editor-tab active" id="tabSource" onclick="switchTab('source')">Source</div>
+        <div class="editor-tab" id="tabDesign" onclick="switchTab('design')">Design</div>
+      </div>
+      <div class="editor-content active" id="viewSource"></div>
+      <div class="design-view" id="viewDesign"></div>
+    </div>
+    <div class="right-panel">
+      <div class="panel-header">Palette</div>
+      <div class="palette-group">
+        <div style="font-weight:bold; margin-bottom:4px;">Swing Containers</div>
+        <div class="palette-item">Panel</div>
+        <div class="palette-item">Scroll Pane</div>
+      </div>
+      <div class="palette-group">
+        <div style="font-weight:bold; margin-bottom:4px;">Swing Controls</div>
+        <div class="palette-item">Label</div>
+        <div class="palette-item">Button</div>
+        <div class="palette-item">Text Field</div>
+        <div class="palette-item">Combo Box</div>
+        <div class="palette-item">Table</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-panel">
+    <div class="output-tabs">
+      <div class="output-tab active">Output - Run (RegistroPersonas)</div>
+      <div class="output-tab">Problems</div>
+    </div>
+    <div class="output-content" id="outputLog"></div>
+  </div>
+</div>
+
+<div class="joverlay" id="overlay">
+  <div class="jdialog">
+    <div class="jdialog-title" id="dlgTitle">Mensaje</div>
+    <div class="jdialog-body">
+      <div class="jdialog-icon icon-info" id="dlgIcon">i</div>
+      <div class="jdialog-text" id="dlgText"></div>
+    </div>
+    <div class="jdialog-footer">
+      <button class="jbtn" id="dlgOk">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DATOS DE LOS 5 EJERCICIOS
+   ========================================================= */
+const EJERCICIOS = {
+
+  /* ============== EJERCICIO 1 ============== */
+  1: {
+    nombre: "Registro de Personas",
+    paquete: "com.mycompany.registropersonas.ejercicio1",
+    formTitulo: "Registro de Personas",
+    campos: [
+      { id: "dni",      label: "DNI:",      tipo: "text" },
+      { id: "nombre",   label: "Nombre:",   tipo: "text" },
+      { id: "apellido", label: "Apellido:", tipo: "text" },
+      { id: "edad",     label: "Edad:",     tipo: "text" }
+    ],
+    columnas: ["DNI", "Nombre", "Apellido", "Edad"],
+    files: [
+      { nombre: "FrmPersona.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio1;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmPersona</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Persona&gt; listaPersonas = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmPersona() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"DNI"</span>, <span class="str">"Nombre"</span>, <span class="str">"Apellido"</span>, <span class="str">"Edad"</span>
+        });
+        modeloTabla.setRowCount(0);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String dni      = txtDni.getText().trim();
+        String nombre   = txtNombre.getText().trim();
+        String apellido = txtApellido.getText().trim();
+        String edadStr  = txtEdad.getText().trim();
+
+        <span class="kw">if</span> (dni.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || edadStr.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">if</span> (!dni.matches(<span class="str">"\\\\d+"</span>)) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El DNI debe contener únicamente números."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> edad;
+        <span class="kw">try</span> {
+            edad = Integer.parseInt(edadStr);
+            <span class="kw">if</span> (edad &lt; 1 || edad &gt; 100) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"La edad debe estar entre 1 y 100 años."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"La edad debe ser un número entero."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Persona p : listaPersonas) {
+            <span class="kw">if</span> (p.getDni().equals(dni)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ya existe una persona con el DNI "</span> + dni);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Persona p = <span class="kw">new</span> Persona(dni, nombre, apellido, edad);
+        listaPersonas.add(p);
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{dni, nombre, apellido, edad});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Persona registrada correctamente."</span>);
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione una persona de la tabla."</span>);
+            <span class="kw">return</span>;
+        }
+        listaPersonas.remove(fila);
+        modeloTabla.removeRow(fila);
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Persona eliminada."</span>);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtDni.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtApellido.setText(<span class="str">""</span>);
+        txtEdad.setText(<span class="str">""</span>);
+        txtDni.requestFocus();
+    }
+}` },
+      { nombre: "Persona.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio1;
+
+<span class="kw">public class</span> <span class="cls">Persona</span> {
+    <span class="kw">private</span> String dni;
+    <span class="kw">private</span> String nombre;
+    <span class="kw">private</span> String apellido;
+    <span class="kw">private int</span> edad;
+
+    <span class="kw">public</span> Persona(String dni, String nombre, String apellido, <span class="kw">int</span> edad) {
+        <span class="kw">this</span>.dni = dni;
+        <span class="kw">this</span>.nombre = nombre;
+        <span class="kw">this</span>.apellido = apellido;
+        <span class="kw">this</span>.edad = edad;
+    }
+
+    <span class="kw">public</span> String getDni()      { <span class="kw">return</span> dni; }
+    <span class="kw">public void</span>   setDni(String d){ <span class="kw">this</span>.dni = d; }
+    <span class="kw">public</span> String getNombre()   { <span class="kw">return</span> nombre; }
+    <span class="kw">public void</span>   setNombre(String n){ <span class="kw">this</span>.nombre = n; }
+    <span class="kw">public</span> String getApellido() { <span class="kw">return</span> apellido; }
+    <span class="kw">public void</span>   setApellido(String a){ <span class="kw">this</span>.apellido = a; }
+    <span class="kw">public int</span>    getEdad()     { <span class="kw">return</span> edad; }
+    <span class="kw">public void</span>   setEdad(<span class="kw">int</span> e) { <span class="kw">this</span>.edad = e; }
+}` }
+    ],
+    validar: v => {
+      if (!v.dni || !v.nombre || !v.apellido || !v.edad) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      if (!/^\d+$/.test(v.dni)) return { ok:false, tipo:'warn', msg:'El DNI debe contener únicamente números.' };
+      const e = parseInt(v.edad, 10);
+      if (isNaN(e) || e < 1 || e > 100) return { ok:false, tipo:'warn', msg:'La edad debe estar entre 1 y 100 años.' };
+      return { ok:true };
+    },
+    claveUnica: 'dni',
+    claveLabel: 'DNI',
+    colMap: ['dni','nombre','apellido','edad']
+  },
+
+  /* ============== EJERCICIO 2 ============== */
+  2: {
+    nombre: "Registro de Alumnos",
+    paquete: "com.mycompany.registropersonas.ejercicio2",
+    formTitulo: "Registro de Alumnos",
+    campos: [
+      { id: "codigo",   label: "Código:",   tipo: "text" },
+      { id: "nombre",   label: "Nombre:",   tipo: "text" },
+      { id: "apellido", label: "Apellido:", tipo: "text" },
+      { id: "edad",     label: "Edad:",     tipo: "text" },
+      { id: "carrera",  label: "Carrera:",  tipo: "text" }
+    ],
+    columnas: ["Código", "Nombre", "Apellido", "Edad", "Carrera"],
+    files: [
+      { nombre: "FrmAlumno.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio2;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmAlumno</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Alumno&gt; listaAlumnos = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmAlumno() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"Código"</span>, <span class="str">"Nombre"</span>, <span class="str">"Apellido"</span>, <span class="str">"Edad"</span>, <span class="str">"Carrera"</span>
+        });
+        modeloTabla.setRowCount(0);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String codigo   = txtCodigo.getText().trim();
+        String nombre   = txtNombre.getText().trim();
+        String apellido = txtApellido.getText().trim();
+        String edadStr  = txtEdad.getText().trim();
+        String carrera  = txtCarrera.getText().trim();
+
+        <span class="kw">if</span> (codigo.isEmpty() || nombre.isEmpty() || apellido.isEmpty()
+                || edadStr.isEmpty() || carrera.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> edad;
+        <span class="kw">try</span> {
+            edad = Integer.parseInt(edadStr);
+            <span class="kw">if</span> (edad &lt; 15 || edad &gt; 80) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"La edad debe estar entre 15 y 80 años."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"La edad debe ser un número entero."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Alumno a : listaAlumnos) {
+            <span class="kw">if</span> (a.getCodigo().equals(codigo)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ya existe un alumno con el código "</span> + codigo);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Alumno a = <span class="kw">new</span> Alumno(codigo, nombre, apellido, edad, carrera);
+        listaAlumnos.add(a);
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{codigo, nombre, apellido, edad, carrera});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Alumno registrado correctamente."</span>);
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un alumno de la tabla."</span>);
+            <span class="kw">return</span>;
+        }
+        listaAlumnos.remove(fila);
+        modeloTabla.removeRow(fila);
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Alumno eliminado."</span>);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtCodigo.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtApellido.setText(<span class="str">""</span>);
+        txtEdad.setText(<span class="str">""</span>);
+        txtCarrera.setText(<span class="str">""</span>);
+        txtCodigo.requestFocus();
+    }
+}` },
+      { nombre: "Alumno.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio2;
+
+<span class="cmt">/**
+ * Alumno hereda de Persona (relación de herencia POO).
+ */</span>
+<span class="kw">public class</span> <span class="cls">Alumno</span> <span class="kw">extends</span> <span class="cls">Persona</span> {
+    <span class="kw">private</span> String codigo;
+    <span class="kw">private</span> String carrera;
+
+    <span class="kw">public</span> Alumno(String codigo, String nombre, String apellido, <span class="kw">int</span> edad, String carrera) {
+        <span class="kw">super</span>(nombre, apellido, edad);
+        <span class="kw">this</span>.codigo = codigo;
+        <span class="kw">this</span>.carrera = carrera;
+    }
+
+    <span class="kw">public</span> String getCodigo()   { <span class="kw">return</span> codigo; }
+    <span class="kw">public void</span>   setCodigo(String c){ <span class="kw">this</span>.codigo = c; }
+    <span class="kw">public</span> String getCarrera()  { <span class="kw">return</span> carrera; }
+    <span class="kw">public void</span>   setCarrera(String c){ <span class="kw">this</span>.carrera = c; }
+}` },
+      { nombre: "Persona.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio2;
+
+<span class="kw">public class</span> <span class="cls">Persona</span> {
+    <span class="kw">private</span> String nombre;
+    <span class="kw">private</span> String apellido;
+    <span class="kw">private int</span> edad;
+
+    <span class="kw">public</span> Persona(String nombre, String apellido, <span class="kw">int</span> edad) {
+        <span class="kw">this</span>.nombre = nombre;
+        <span class="kw">this</span>.apellido = apellido;
+        <span class="kw">this</span>.edad = edad;
+    }
+
+    <span class="kw">public</span> String getNombre()   { <span class="kw">return</span> nombre; }
+    <span class="kw">public</span> String getApellido() { <span class="kw">return</span> apellido; }
+    <span class="kw">public int</span>    getEdad()     { <span class="kw">return</span> edad; }
+}` }
+    ],
+    validar: v => {
+      if (!v.codigo || !v.nombre || !v.apellido || !v.edad || !v.carrera) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      const e = parseInt(v.edad, 10);
+      if (isNaN(e) || e < 15 || e > 80) return { ok:false, tipo:'warn', msg:'La edad debe estar entre 15 y 80 años.' };
+      return { ok:true };
+    },
+    claveUnica: 'codigo',
+    claveLabel: 'código',
+    colMap: ['codigo','nombre','apellido','edad','carrera']
+  },
+
+  /* ============== EJERCICIO 3 ============== */
+  3: {
+    nombre: "Registro de Vehículos",
+    paquete: "com.mycompany.registropersonas.ejercicio3",
+    formTitulo: "Registro de Vehículos",
+    campos: [
+      { id: "placa",  label: "Placa:",  tipo: "text" },
+      { id: "marca",  label: "Marca:",  tipo: "text" },
+      { id: "modelo", label: "Modelo:", tipo: "text" },
+      { id: "anio",   label: "Año:",    tipo: "text" },
+      { id: "tipo",   label: "Tipo:",   tipo: "combo", opciones: ["Auto", "Moto"] }
+    ],
+    columnas: ["Placa", "Marca", "Modelo", "Año", "Tipo"],
+    files: [
+      { nombre: "FrmVehiculo.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio3;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmVehiculo</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Vehiculo&gt; listaVehiculos = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmVehiculo() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"Placa"</span>, <span class="str">"Marca"</span>, <span class="str">"Modelo"</span>, <span class="str">"Año"</span>, <span class="str">"Tipo"</span>
+        });
+        modeloTabla.setRowCount(0);
+        cboTipo.removeAllItems();
+        cboTipo.addItem(<span class="str">"Auto"</span>);
+        cboTipo.addItem(<span class="str">"Moto"</span>);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String placa   = txtPlaca.getText().trim();
+        String marca   = txtMarca.getText().trim();
+        String modelo  = txtModelo.getText().trim();
+        String anioStr = txtAnio.getText().trim();
+        String tipo    = (String) cboTipo.getSelectedItem();
+
+        <span class="kw">if</span> (placa.isEmpty() || marca.isEmpty() || modelo.isEmpty() || anioStr.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> anio;
+        <span class="kw">try</span> {
+            anio = Integer.parseInt(anioStr);
+            <span class="kw">if</span> (anio &lt; 1990 || anio &gt; 2026) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El año debe estar entre 1990 y 2026."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El año debe ser numérico."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Vehiculo v : listaVehiculos) {
+            <span class="kw">if</span> (v.getPlaca().equalsIgnoreCase(placa)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ya existe un vehículo con la placa "</span> + placa);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Vehiculo v = <span class="kw">new</span> Vehiculo(placa, marca, modelo, anio, tipo);
+        listaVehiculos.add(v);
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{placa, marca, modelo, anio, tipo});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Vehículo registrado: "</span> + v.getDescripcion());
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un vehículo de la tabla."</span>);
+            <span class="kw">return</span>;
+        }
+        listaVehiculos.remove(fila);
+        modeloTabla.removeRow(fila);
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Vehículo eliminado."</span>);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtPlaca.setText(<span class="str">""</span>);
+        txtMarca.setText(<span class="str">""</span>);
+        txtModelo.setText(<span class="str">""</span>);
+        txtAnio.setText(<span class="str">""</span>);
+        cboTipo.setSelectedIndex(0);
+        txtPlaca.requestFocus();
+    }
+}` },
+      { nombre: "Vehiculo.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio3;
+
+<span class="kw">public class</span> <span class="cls">Vehiculo</span> {
+    <span class="kw">private</span> String placa;
+    <span class="kw">private</span> String marca;
+    <span class="kw">private</span> String modelo;
+    <span class="kw">private int</span> anio;
+    <span class="kw">private</span> String tipo;   <span class="cmt">// "Auto" o "Moto"</span>
+
+    <span class="kw">public</span> Vehiculo(String placa, String marca, String modelo, <span class="kw">int</span> anio, String tipo) {
+        <span class="kw">this</span>.placa  = placa;
+        <span class="kw">this</span>.marca  = marca;
+        <span class="kw">this</span>.modelo = modelo;
+        <span class="kw">this</span>.anio   = anio;
+        <span class="kw">this</span>.tipo   = tipo;
+    }
+
+    <span class="cmt">/** Cada tipo de vehículo tiene su propia descripción. */</span>
+    <span class="kw">public</span> String getDescripcion() {
+        <span class="kw">if</span> (tipo.equalsIgnoreCase(<span class="str">"Auto"</span>))
+            <span class="kw">return</span> <span class="str">"Auto: vehículo de 4 ruedas para pasajeros"</span>;
+        <span class="kw">return</span> <span class="str">"Moto: vehículo de 2 ruedas"</span>;
+    }
+
+    <span class="kw">public</span> String getPlaca()  { <span class="kw">return</span> placa; }
+    <span class="kw">public</span> String getMarca()  { <span class="kw">return</span> marca; }
+    <span class="kw">public</span> String getModelo() { <span class="kw">return</span> modelo; }
+    <span class="kw">public int</span>    getAnio()   { <span class="kw">return</span> anio; }
+    <span class="kw">public</span> String getTipo()   { <span class="kw">return</span> tipo; }
+}` }
+    ],
+    validar: v => {
+      if (!v.placa || !v.marca || !v.modelo || !v.anio) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      const a = parseInt(v.anio, 10);
+      if (isNaN(a) || a < 1990 || a > 2026) return { ok:false, tipo:'warn', msg:'El año debe estar entre 1990 y 2026.' };
+      return { ok:true };
+    },
+    claveUnica: 'placa',
+    claveLabel: 'placa',
+    colMap: ['placa','marca','modelo','anio','tipo']
+  },
+
+  /* ============== EJERCICIO 4 (Calculadora) ============== */
+  4: {
+    nombre: "Calculadora de Áreas",
+    paquete: "com.mycompany.registropersonas.ejercicio4",
+    formTitulo: "Calculadora de Áreas",
+    esCalculadora: true,
+    campos: [
+      { id: "figura", label: "Figura:",      tipo: "combo", opciones: ["Círculo", "Rectángulo", "Triángulo"] },
+      { id: "dato1",  label: "Radio:",       tipo: "text" },
+      { id: "dato2",  label: "Altura:",      tipo: "text" }
+    ],
+    columnas: null,
+    files: [
+      { nombre: "FrmCalculadora.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio4;
+
+<span class="kw">import</span> javax.swing.JOptionPane;
+
+<span class="kw">public class</span> <span class="cls">FrmCalculadora</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">public</span> FrmCalculadora() {
+        initComponents();
+        cboFigura.removeAllItems();
+        cboFigura.addItem(<span class="str">"Círculo"</span>);
+        cboFigura.addItem(<span class="str">"Rectángulo"</span>);
+        cboFigura.addItem(<span class="str">"Triángulo"</span>);
+        txtDato2.setEnabled(<span class="kw">false</span>);
+    }
+
+    <span class="kw">private void</span> cboFiguraActionPerformed(java.awt.event.ActionEvent evt) {
+        String fig = (String) cboFigura.getSelectedItem();
+        <span class="kw">if</span> (fig.equals(<span class="str">"Círculo"</span>)) {
+            lblDato1.setText(<span class="str">"Radio:"</span>);
+            txtDato2.setEnabled(<span class="kw">false</span>);
+        } <span class="kw">else</span> {
+            lblDato1.setText(<span class="str">"Base:"</span>);
+            txtDato2.setEnabled(<span class="kw">true</span>);
+        }
+    }
+
+    <span class="kw">private void</span> btnCalcularActionPerformed(java.awt.event.ActionEvent evt) {
+        String fig = (String) cboFigura.getSelectedItem();
+        Figura figura;
+
+        <span class="kw">try</span> {
+            <span class="kw">double</span> d1 = Double.parseDouble(txtDato1.getText().trim());
+            <span class="kw">if</span> (d1 &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El valor debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+            <span class="kw">if</span> (fig.equals(<span class="str">"Círculo"</span>)) {
+                figura = <span class="kw">new</span> Circulo(d1);
+            } <span class="kw">else</span> {
+                <span class="kw">double</span> d2 = Double.parseDouble(txtDato2.getText().trim());
+                <span class="kw">if</span> (d2 &lt;= 0) {
+                    JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El valor debe ser mayor que cero."</span>);
+                    <span class="kw">return</span>;
+                }
+                figura = fig.equals(<span class="str">"Rectángulo"</span>)
+                        ? <span class="kw">new</span> Rectangulo(d1, d2)
+                        : <span class="kw">new</span> Triangulo(d1, d2);
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ingrese valores numéricos."</span>);
+            <span class="kw">return</span>;
+        }
+
+        <span class="kw">double</span> area = figura.calcularArea();   <span class="cmt">// Polimorfismo</span>
+        lblResultado.setText(String.format(<span class="str">"Área = %.2f"</span>, area));
+    }
+}` },
+      { nombre: "Figura.java", activo: false, codigo: `<span class="cmt">// Clase abstracta base</span>
+<span class="kw">package</span> com.mycompany.registropersonas.ejercicio4;
+
+<span class="kw">public abstract class</span> <span class="cls">Figura</span> {
+    <span class="kw">public abstract double</span> calcularArea();
+}
+
+<span class="cmt">// ---------- Circulo.java ----------</span>
+<span class="kw">class</span> <span class="cls">Circulo</span> <span class="kw">extends</span> <span class="cls">Figura</span> {
+    <span class="kw">private final double</span> radio;
+    <span class="kw">public</span> Circulo(<span class="kw">double</span> r) { <span class="kw">this</span>.radio = r; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularArea() {
+        <span class="kw">return</span> Math.PI * radio * radio;
+    }
+}
+
+<span class="cmt">// ---------- Rectangulo.java ----------</span>
+<span class="kw">class</span> <span class="cls">Rectangulo</span> <span class="kw">extends</span> <span class="cls">Figura</span> {
+    <span class="kw">private final double</span> base, altura;
+    <span class="kw">public</span> Rectangulo(<span class="kw">double</span> b, <span class="kw">double</span> a) { base = b; altura = a; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularArea() { <span class="kw">return</span> base * altura; }
+}
+
+<span class="cmt">// ---------- Triangulo.java ----------</span>
+<span class="kw">class</span> <span class="cls">Triangulo</span> <span class="kw">extends</span> <span class="cls">Figura</span> {
+    <span class="kw">private final double</span> base, altura;
+    <span class="kw">public</span> Triangulo(<span class="kw">double</span> b, <span class="kw">double</span> a) { base = b; altura = a; }
+    <span class="ann">@Override</span> <span class="kw">public double</span> calcularArea() { <span class="kw">return</span> (base * altura) / 2.0; }
+}` }
+    ],
+    validar: v => {
+      if (!v.dato1) return { ok:false, tipo:'warn', msg:'Ingrese el primer valor.' };
+      const d1 = parseFloat(v.dato1);
+      if (isNaN(d1) || d1 <= 0) return { ok:false, tipo:'warn', msg:'El valor debe ser mayor que cero.' };
+      if (v.figura !== "Círculo") {
+        if (!v.dato2) return { ok:false, tipo:'warn', msg:'Ingrese la altura.' };
+        const d2 = parseFloat(v.dato2);
+        if (isNaN(d2) || d2 <= 0) return { ok:false, tipo:'warn', msg:'El valor debe ser mayor que cero.' };
+      }
+      return { ok:true };
+    },
+    calcularArea: v => {
+      const d1 = parseFloat(v.dato1);
+      if (v.figura === "Círculo") return Math.PI * d1 * d1;
+      const d2 = parseFloat(v.dato2);
+      if (v.figura === "Rectángulo") return d1 * d2;
+      return (d1 * d2) / 2;
+    }
+  },
+
+  /* ============== EJERCICIO 5 ============== */
+  5: {
+    nombre: "Registro de Productos",
+    paquete: "com.mycompany.registropersonas.ejercicio5",
+    formTitulo: "Registro de Productos",
+    campos: [
+      { id: "codigo",    label: "Código:",    tipo: "text" },
+      { id: "nombre",    label: "Nombre:",    tipo: "text" },
+      { id: "precio",    label: "Precio:",    tipo: "text" },
+      { id: "categoria", label: "Categoría:", tipo: "text" },
+      { id: "stock",     label: "Stock:",     tipo: "text" }
+    ],
+    columnas: ["Código", "Nombre", "Categoría", "Precio", "Stock", "Valor Inv."],
+    files: [
+      { nombre: "FrmProducto.java", activo: true, codigo: `package com.mycompany.registropersonas.ejercicio5;
+
+<span class="kw">import</span> java.util.ArrayList;
+<span class="kw">import</span> javax.swing.JOptionPane;
+<span class="kw">import</span> javax.swing.table.DefaultTableModel;
+
+<span class="kw">public class</span> <span class="cls">FrmProducto</span> <span class="kw">extends</span> javax.swing.JFrame {
+
+    <span class="kw">private final</span> ArrayList&lt;Producto&gt; listaProductos = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">private final</span> DefaultTableModel modeloTabla;
+
+    <span class="kw">public</span> FrmProducto() {
+        initComponents();
+        modeloTabla = (DefaultTableModel) jTable1.getModel();
+        modeloTabla.setColumnIdentifiers(<span class="kw">new</span> Object[]{
+            <span class="str">"Código"</span>, <span class="str">"Nombre"</span>, <span class="str">"Categoría"</span>, <span class="str">"Precio"</span>, <span class="str">"Stock"</span>, <span class="str">"Valor Inv."</span>
+        });
+        modeloTabla.setRowCount(0);
+    }
+
+    <span class="kw">private void</span> btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String codigo    = txtCodigo.getText().trim();
+        String nombre    = txtNombre.getText().trim();
+        String precioStr = txtPrecio.getText().trim();
+        String categoria = txtCategoria.getText().trim();
+        String stockStr  = txtStock.getText().trim();
+
+        <span class="kw">if</span> (codigo.isEmpty() || nombre.isEmpty() || precioStr.isEmpty()
+                || categoria.isEmpty() || stockStr.isEmpty()) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Todos los campos son obligatorios."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">double</span> precio;
+        <span class="kw">int</span> stock;
+        <span class="kw">try</span> {
+            precio = Double.parseDouble(precioStr);
+            <span class="kw">if</span> (precio &lt;= 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El precio debe ser mayor que cero."</span>);
+                <span class="kw">return</span>;
+            }
+            stock = Integer.parseInt(stockStr);
+            <span class="kw">if</span> (stock &lt; 0) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"El stock debe ser mayor o igual a cero."</span>);
+                <span class="kw">return</span>;
+            }
+        } <span class="kw">catch</span> (NumberFormatException e) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Precio y stock deben ser numéricos."</span>);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">for</span> (Producto p : listaProductos) {
+            <span class="kw">if</span> (p.getCodigo().equals(codigo)) {
+                JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Ya existe un producto con el código "</span> + codigo);
+                <span class="kw">return</span>;
+            }
+        }
+
+        Producto p = <span class="kw">new</span> Producto(codigo, nombre, precio, categoria, stock);
+        listaProductos.add(p);
+        <span class="kw">double</span> valorInv = p.calcularValorInventario();
+        modeloTabla.addRow(<span class="kw">new</span> Object[]{codigo, nombre, categoria,
+            String.format(<span class="str">"%.2f"</span>, precio), stock,
+            String.format(<span class="str">"%.2f"</span>, valorInv)});
+        limpiarCampos();
+        JOptionPane.showMessageDialog(<span class="kw">this</span>,
+            <span class="str">"Producto registrado. Valor del inventario: S/ "</span>
+            + String.format(<span class="str">"%.2f"</span>, valorInv));
+    }
+
+    <span class="kw">private void</span> btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        <span class="kw">int</span> fila = jTable1.getSelectedRow();
+        <span class="kw">if</span> (fila == -1) {
+            JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Seleccione un producto de la tabla."</span>);
+            <span class="kw">return</span>;
+        }
+        listaProductos.remove(fila);
+        modeloTabla.removeRow(fila);
+        JOptionPane.showMessageDialog(<span class="kw">this</span>, <span class="str">"Producto eliminado."</span>);
+    }
+
+    <span class="kw">private void</span> limpiarCampos() {
+        txtCodigo.setText(<span class="str">""</span>);
+        txtNombre.setText(<span class="str">""</span>);
+        txtPrecio.setText(<span class="str">""</span>);
+        txtCategoria.setText(<span class="str">""</span>);
+        txtStock.setText(<span class="str">""</span>);
+        txtCodigo.requestFocus();
+    }
+}` },
+      { nombre: "Producto.java", activo: false, codigo: `package com.mycompany.registropersonas.ejercicio5;
+
+<span class="kw">public class</span> <span class="cls">Producto</span> {
+    <span class="kw">private</span> String codigo;
+    <span class="kw">private</span> String nombre;
+    <span class="kw">private double</span> precio;
+    <span class="kw">private</span> String categoria;
+    <span class="kw">private int</span> stock;
+
+    <span class="kw">public</span> Producto(String codigo, String nombre, <span class="kw">double</span> precio,
+                    String categoria, <span class="kw">int</span> stock) {
+        <span class="kw">this</span>.codigo = codigo;
+        <span class="kw">this</span>.nombre = nombre;
+        <span class="kw">this</span>.precio = precio;
+        <span class="kw">this</span>.categoria = categoria;
+        <span class="kw">this</span>.stock = stock;
+    }
+
+    <span class="cmt">/** Valor del inventario = Precio x Stock */</span>
+    <span class="kw">public double</span> calcularValorInventario() {
+        <span class="kw">return</span> precio * stock;
+    }
+
+    <span class="kw">public</span> String getCodigo()    { <span class="kw">return</span> codigo; }
+    <span class="kw">public</span> String getNombre()    { <span class="kw">return</span> nombre; }
+    <span class="kw">public double</span> getPrecio()    { <span class="kw">return</span> precio; }
+    <span class="kw">public</span> String getCategoria() { <span class="kw">return</span> categoria; }
+    <span class="kw">public int</span>    getStock()     { <span class="kw">return</span> stock; }
+}` }
+    ],
+    validar: v => {
+      if (!v.codigo || !v.nombre || !v.precio || !v.categoria || !v.stock) return { ok:false, tipo:'warn', msg:'Todos los campos son obligatorios.' };
+      const pr = parseFloat(v.precio);
+      if (isNaN(pr) || pr <= 0) return { ok:false, tipo:'warn', msg:'El precio debe ser mayor que cero.' };
+      const st = parseInt(v.stock, 10);
+      if (isNaN(st) || st < 0) return { ok:false, tipo:'warn', msg:'El stock debe ser un entero mayor o igual a cero.' };
+      return { ok:true };
+    },
+    claveUnica: 'codigo',
+    claveLabel: 'código',
+    colMap: ['codigo','nombre','categoria','precio','stock'],
+    extraCol: v => (parseFloat(v.precio) * parseInt(v.stock, 10)).toFixed(2)
+  }
+};
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+let ejercicioActual = 1;
+let indiceArchivo = 0;
+let seleccionado = -1;
+const registros = {};     // registros por ejercicio
+const tablasDatos = {};   // filas de tabla por ejercicio
+
+const $ = id => document.getElementById(id);
+
+/* =========================================================
+   JOptionPane
+   ========================================================= */
+function mostrarMensaje(texto, tipo = 'info') {
+  const iconos = { info:'i', warn:'!', error:'✕' };
+  const titulos = { info:'Información', warn:'Advertencia', error:'Error' };
+  $('dlgIcon').className = 'jdialog-icon icon-' + tipo;
+  $('dlgIcon').textContent = iconos[tipo];
+  $('dlgTitle').textContent = titulos[tipo];
+  $('dlgText').textContent = texto;
+  $('overlay').classList.add('show');
+  $('dlgOk').focus();
+}
+$('dlgOk').addEventListener('click', () => $('overlay').classList.remove('show'));
+$('overlay').addEventListener('click', e => { if (e.target === $('overlay')) $('overlay').classList.remove('show'); });
+
+/* =========================================================
+   ÁRBOL
+   ========================================================= */
+function renderTree() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const tree = $('tree');
+  let filesHTML = '';
+  ex.files.forEach((f, i) => {
+    filesHTML += `<div class="tree-node indent-5 ${i === indiceArchivo ? 'active' : ''}"
+                       onclick="showFile(${i})">📄 ${f.nombre}</div>`;
+  });
+  tree.innerHTML = `
+    <div class="tree-node" style="font-weight:bold;">📁 PracticoSwing</div>
+    <div class="tree-node indent-1" style="font-weight:bold;">📁 RegistroPersonas</div>
+    <div class="tree-node indent-2" style="font-weight:bold;">📁 Source Packages</div>
+    <div class="tree-node indent-3" style="font-weight:bold;">📁 com.mycompany.registropersonas</div>
+    <div class="tree-node indent-4" style="font-weight:bold;">📁 ejercicio${ejercicioActual}</div>
+    ${filesHTML}
+    <div class="tree-node indent-2" style="font-weight:bold;">📁 Dependencies</div>
+    <div class="tree-node indent-2" style="font-weight:bold;">📁 Project Files</div>
+  `;
+}
+
+function showFile(i) {
+  indiceArchivo = i;
+  renderTree();
+  renderSource();
+  switchTab('source');
+}
+
+/* =========================================================
+   CÓDIGO
+   ========================================================= */
+function renderSource() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const code = ex.files[indiceArchivo].codigo;
+  $('viewSource').innerHTML = code.split('\n').map((line, i) =>
+    `<div class="code-line"><span class="line-num">${i + 1}</span>${line}</div>`
+  ).join('');
+}
+
+/* =========================================================
+   DISEÑO
+   ========================================================= */
+function renderDesign() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const design = $('viewDesign');
+
+  let camposHTML = '';
+  ex.campos.forEach(c => {
+    if (c.tipo === 'combo') {
+      camposHTML += `
+        <label for="${c.id}">${c.label}</label>
+        <select id="${c.id}">
+          ${c.opciones.map(o => `<option value="${o}">${o}</option>`).join('')}
+        </select>`;
+    } else {
+      camposHTML += `
+        <label for="${c.id}">${c.label}</label>
+        <input id="${c.id}" type="text" autocomplete="off">`;
+    }
+  });
+
+  let tablaHTML = '';
+  if (ex.esCalculadora) {
+    tablaHTML = `<div class="jresult" id="resultado">Área = <strong>0.00</strong></div>`;
+  } else {
+    tablaHTML = `
+      <div class="jscrollpane">
+        <table class="jtable">
+          <thead>
+            <tr>${ex.columnas.map(col => `<th>${col}</th>`).join('')}</tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>`;
+  }
+
+  design.innerHTML = `
+    <div class="jframe">
+      <div class="jframe-titlebar">
+        <span class="title-icon">▣</span>
+        <span class="title-text">${ex.formTitulo}</span>
+        <div class="jframe-win-btns">
+          <button class="jframe-win-btn">—</button>
+          <button class="jframe-win-btn">▢</button>
+          <button class="jframe-win-btn close">✕</button>
+        </div>
+      </div>
+      <div class="jframe-content">
+        <fieldset class="jpanel-titled">
+          <legend>Datos</legend>
+          <div class="jgrid">${camposHTML}</div>
+          <div class="jbuttons">
+            <button class="jbtn" id="btnAccion">${ex.esCalculadora ? 'Calcular' : 'Registrar'}</button>
+            ${ex.esCalculadora
+              ? `<button class="jbtn" id="btnLimpiarCalc">Limpiar</button>`
+              : `<button class="jbtn" id="btnEliminar">Eliminar</button>
+                 <button class="jbtn" id="btnLimpiar">Limpiar</button>`}
+          </div>
+        </fieldset>
+        ${tablaHTML}
+      </div>
+    </div>
+  `;
+
+  if (ex.esCalculadora) {
+    $('btnAccion').addEventListener('click', calcularArea);
+    $('btnLimpiarCalc').addEventListener('click', limpiarCalculadora);
+    const cbo = $('figura');
+    const lbl1 = document.querySelector('label[for="dato1"]');
+    const lbl2 = document.querySelector('label[for="dato2"]');
+    const in2  = $('dato2');
+    const updateCalcUI = () => {
+      const esCirc = cbo.value === 'Círculo';
+      lbl1.textContent = esCirc ? 'Radio:' : 'Base:';
+      lbl2.style.opacity = esCirc ? '0.4' : '1';
+      in2.disabled = esCirc;
+      in2.value = '';
+    };
+    cbo.addEventListener('change', updateCalcUI);
+    updateCalcUI();
+  } else {
+    $('btnAccion').addEventListener('click', registrar);
+    $('btnEliminar').addEventListener('click', eliminar);
+    $('btnLimpiar').addEventListener('click', () => limpiarCampos(true));
+    ex.campos.forEach(c => {
+      const el = $(c.id);
+      if (el && el.tagName === 'INPUT') {
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') registrar(); });
+      }
+    });
+    renderTabla();
+  }
+}
+
+/* =========================================================
+   REGISTRAR / ELIMINAR / LIMPIAR
+   ========================================================= */
+function leerValores() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const v = {};
+  ex.campos.forEach(c => {
+    const el = $(c.id);
+    v[c.id] = el ? el.value.trim() : '';
+  });
+  return v;
+}
+
+function registrar() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const v = leerValores();
+  const res = ex.validar(v);
+  if (!res.ok) return mostrarMensaje(res.msg, res.tipo);
+
+  // Clave única
+  if (ex.claveUnica) {
+    if (!registros[ejercicioActual]) registros[ejercicioActual] = {};
+    if (registros[ejercicioActual][v[ex.claveUnica]]) {
+      return mostrarMensaje(`Ya existe un registro con el ${ex.claveLabel} ${v[ex.claveUnica]}.`, 'error');
+    }
+    registros[ejercicioActual][v[ex.claveUnica]] = v;
+  }
+
+  // Fila
+  const fila = ex.colMap.map(k => v[k]);
+  if (ex.extraCol) fila.push(ex.extraCol(v));
+
+  if (!tablasDatos[ejercicioActual]) tablasDatos[ejercicioActual] = [];
+  tablasDatos[ejercicioActual].push(fila);
+
+  renderTabla();
+  limpiarCampos(false);
+
+  let msg = 'Registro guardado correctamente.';
+  if (ex.extraCol) msg = `Producto registrado. Valor del inventario: S/ ${ex.extraCol(v)}`;
+  mostrarMensaje(msg, 'info');
+}
+
+function eliminar() {
+  if (seleccionado < 0) return mostrarMensaje('Seleccione un registro de la tabla para eliminar.', 'warn');
+  tablasDatos[ejercicioActual].splice(seleccionado, 1);
+  seleccionado = -1;
+  renderTabla();
+  mostrarMensaje('Registro eliminado.', 'info');
+}
+
+function limpiarCampos(enfocar = true) {
+  const ex = EJERCICIOS[ejercicioActual];
+  ex.campos.forEach(c => {
+    const el = $(c.id);
+    if (!el) return;
+    if (c.tipo === 'combo') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  if (enfocar) {
+    const p = $(ex.campos[0].id);
+    if (p && !p.disabled) p.focus();
+  }
+}
+
+function renderTabla() {
+  const tbody = $('tbody');
+  if (!tbody) return;
+  const ex = EJERCICIOS[ejercicioActual];
+  const datos = tablasDatos[ejercicioActual] || [];
+
+  tbody.innerHTML = '';
+  if (datos.length === 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'empty-row';
+    const td = document.createElement('td');
+    td.colSpan = ex.columnas.length;
+    td.textContent = 'No hay registros.';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  } else {
+    datos.forEach((fila, i) => {
+      const tr = document.createElement('tr');
+      if (i === seleccionado) tr.classList.add('selected');
+      fila.forEach(val => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tr.addEventListener('click', () => { seleccionado = i; renderTabla(); });
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+/* =========================================================
+   CALCULADORA
+   ========================================================= */
+function calcularArea() {
+  const ex = EJERCICIOS[ejercicioActual];
+  const v = leerValores();
+  const res = ex.validar(v);
+  if (!res.ok) return mostrarMensaje(res.msg, res.tipo);
+  const area = ex.calcularArea(v);
+  $('resultado').innerHTML = `Área = <strong>${area.toFixed(2)}</strong>`;
+  mostrarMensaje(`Área calculada: ${area.toFixed(2)}`, 'info');
+}
+function limpiarCalculadora() {
+  const ex = EJERCICIOS[ejercicioActual];
+  ex.campos.forEach(c => { const el = $(c.id); if (el) el.value = ''; });
+  $('resultado').innerHTML = 'Área = <strong>0.00</strong>';
+}
+
+/* =========================================================
+   TABS
+   ========================================================= */
+function switchTab(tab) {
+  const vs = $('viewSource'), vd = $('viewDesign');
+  const ts = $('tabSource'), td = $('tabDesign');
+  if (tab === 'source') {
+    vs.classList.add('active'); vd.classList.remove('active');
+    ts.classList.add('active'); td.classList.remove('active');
+  } else {
+    vs.classList.remove('active'); vd.classList.add('active');
+    ts.classList.remove('active'); td.classList.add('active');
+    renderDesign();
+  }
+}
+
+/* =========================================================
+   CAMBIO DE EJERCICIO
+   ========================================================= */
+document.querySelectorAll('.ex-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ejercicioActual = parseInt(btn.dataset.ex, 10);
+    indiceArchivo = 0;
+    seleccionado = -1;
+    renderTree();
+    renderSource();
+    switchTab('source');
+    $('outputLog').innerHTML =
+      `<span class="out-green">--- exec:3.0:exec (default-cli) @ RegistroPersonas ---</span><br>` +
+      `Cargando ejercicio ${ejercicioActual}: ${EJERCICIOS[ejercicioActual].nombre}...<br>` +
+      `<span class="out-blue">-------------------------------------------------------</span><br>` +
+      `<span class="out-green">BUILD SUCCESSFUL</span>`;
+  });
+});
+
+/* =========================================================
+   BOTÓN RUN
+   ========================================================= */
+$('btnRun').addEventListener('click', () => {
+  $('outputLog').innerHTML =
+    `<span class="out-green">--- exec:3.0:exec (default-cli) @ RegistroPersonas ---</span><br>` +
+    `Ejecutando ejercicio ${ejercicioActual}...<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span><br>` +
+    `<span class="out-green">BUILD SUCCESSFUL</span><br>` +
+    `Total time: 4.212 s<br>` +
+    `Finished at: ${new Date().toISOString().replace('T', ' ').substring(0, 19)}<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span>`;
+  switchTab('design');
+});
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+window.addEventListener('load', () => {
+  renderTree();
+  renderSource();
+  $('outputLog').innerHTML =
+    `<span class="out-green">--- exec:3.0:exec (default-cli) @ RegistroPersonas ---</span><br>` +
+    `Hello World!<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span><br>` +
+    `<span class="out-green">BUILD SUCCESSFUL</span><br>` +
+    `Total time: 5.081 s<br>` +
+    `<span class="out-blue">-------------------------------------------------------</span>`;
+});
+</script>
+</body>
+</html>
